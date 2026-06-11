@@ -161,6 +161,31 @@
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 90; background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 999px; font-size: 13.5px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); max-width: calc(100% - 32px); }
   .err { color: var(--danger); font-size: 13.5px; padding: 4px 2px; }
   .loading { text-align: center; color: var(--muted); padding: 30px; font-size: 14px; }
+
+  /* ── catálogo ── */
+  .subtabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .subtab { flex: 1; padding: 10px; border-radius: 12px; font-size: 14px; font-weight: 600; border: 1px solid var(--line); color: var(--muted); background: #fff; }
+  .subtab.sel { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+  .cat-item { display: flex; gap: 12px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px; }
+  .cat-item.dim { opacity: 0.55; }
+  .thumb { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; background: var(--bg-warm); flex-shrink: 0; }
+  .cat-mid { flex: 1; min-width: 0; }
+  .cat-mid strong { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cat-mid p { font-size: 12.5px; color: var(--muted); margin: 1px 0 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .cat-mid .meta { font-size: 12px; color: var(--primary); font-family: var(--numeral); font-weight: 600; margin-top: 3px; }
+  .cat-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .mini { padding: 7px 11px; font-size: 12.5px; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: var(--primary); font-weight: 500; }
+  .mini:active { transform: scale(0.95); }
+  .mini.warn { color: var(--danger); border-color: #e3b3ac; }
+  .mini.ok { color: var(--ok); border-color: #bfe0cc; }
+  .reorder { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+  .reorder button { width: 30px; height: 26px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--primary); font-size: 13px; }
+  .reorder button:disabled { opacity: 0.3; }
+  .badge-off { font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: var(--gray-bg); color: var(--gray); }
+  .imgprev { width: 100%; max-height: 200px; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); margin: 4px 0; background: var(--bg-warm); }
+  .filehint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  textarea { width: 100%; padding: 13px 14px; border-radius: 13px; border: 1.5px solid var(--line); background: #fff; color: var(--ink); font-family: inherit; font-size: 16px; resize: vertical; min-height: 72px; }
+  textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(164,54,90,0.1); }
 </style>
 </head>
 <body>
@@ -195,6 +220,8 @@
   var tab = "hoy";
   var selDate = todayStr();
   var cancelCount = 0;
+  var catSub = "servicios";   // catálogo sub-tab: "servicios" | "subservicios"
+  var catFilter = null;       // service id selected in the subservicios filter
 
   function authed() { return token && tokenExp > Date.now(); }
   function setToken(t, exp) {
@@ -310,7 +337,7 @@
   // ══════════════════════════════════════════════════════════════
   function renderShell() {
     clear(app);
-    var tabsDef = [["hoy", "Hoy"], ["cancelaciones", "Cancelaciones"], ["bloqueos", "Bloqueos"], ["config", "Configuración"]];
+    var tabsDef = [["hoy", "Hoy"], ["cancelaciones", "Cancelaciones"], ["bloqueos", "Bloqueos"], ["catalogo", "Catálogo"], ["config", "Configuración"]];
     var tabBar = h("div", { class: "tabs" }, tabsDef.map(function (t) {
       var children = [t[1]];
       if (t[0] === "cancelaciones" && cancelCount > 0) children.push(h("span", { class: "dot" }, [String(cancelCount)]));
@@ -336,6 +363,7 @@
     if (tab === "hoy") renderHoy(main);
     else if (tab === "cancelaciones") renderCancelaciones(main);
     else if (tab === "bloqueos") renderBloqueos(main);
+    else if (tab === "catalogo") renderCatalogo(main);
     else if (tab === "config") renderConfig(main);
   }
 
@@ -569,6 +597,295 @@
       ]);
     }));
     main.appendChild(list);
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  TAB: CATÁLOGO
+  // ══════════════════════════════════════════════════════════════
+
+  // Read a file, validate type/size, resize to max 1200px wide, return
+  // { data: <base64>, contentType: 'image/jpeg', preview: <dataURL> }.
+  function prepImage(file) {
+    return new Promise(function (resolve, reject) {
+      var ok = ["image/jpeg", "image/png", "image/webp"];
+      if (ok.indexOf(file.type) === -1) { reject(new Error("Formato no permitido. Usa JPG, PNG o WEBP.")); return; }
+      if (file.size > 5 * 1024 * 1024) { reject(new Error("La imagen supera 5 MB.")); return; }
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        var maxW = 1200;
+        var scale = Math.min(1, maxW / img.width);
+        var w = Math.max(1, Math.round(img.width * scale));
+        var hh = Math.max(1, Math.round(img.height * scale));
+        var c = document.createElement("canvas");
+        c.width = w; c.height = hh;
+        c.getContext("2d").drawImage(img, 0, 0, w, hh);
+        var dataUrl = c.toDataURL("image/jpeg", 0.85);
+        resolve({ data: dataUrl.split(",")[1], contentType: "image/jpeg", preview: dataUrl });
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("No se pudo leer la imagen.")); };
+      img.src = url;
+    });
+  }
+
+  async function renderCatalogo(main) {
+    clear(main);
+    main.appendChild(h("div", { class: "subtabs" }, [
+      h("button", { class: "subtab" + (catSub === "servicios" ? " sel" : ""), onclick: function () { catSub = "servicios"; renderCatalogo(main); } }, ["Servicios"]),
+      h("button", { class: "subtab" + (catSub === "subservicios" ? " sel" : ""), onclick: function () { catSub = "subservicios"; renderCatalogo(main); } }, ["Subservicios"]),
+    ]));
+
+    var loading = h("div", { class: "loading" }, ["Cargando catálogo…"]);
+    main.appendChild(loading);
+    var data;
+    try { data = await api("/catalog"); }
+    catch (e) { loading.className = "err"; loading.textContent = e.message; return; }
+    loading.remove();
+
+    var services = data.services || [];
+    if (catSub === "servicios") renderServicios(main, services);
+    else renderSubservicios(main, services);
+  }
+
+  // ── confirmación + activar/desactivar (servicios y subservicios) ──
+  async function toggleActive(kind, id, active, name, main) {
+    if (!active && !confirm('¿Desactivar “' + name + '”? No se borra nada; puedes reactivarlo cuando quieras.')) return;
+    var path = (kind === "services" ? "/services/" : "/service-options/") + id;
+    try {
+      await api(path, { method: "PATCH", body: { active: active } });
+      toast(active ? "Activado ✓" : "Desactivado ✓");
+      renderCatalogo(main);
+    } catch (e) { toast(e.message); }
+  }
+
+  // ── SERVICIOS ──
+  function renderServicios(main, services) {
+    var addBtn = h("button", { class: "btn btn-primary", style: "margin-bottom:14px" }, ["+ Nuevo servicio"]);
+    addBtn.addEventListener("click", function () { openServiceForm(null, main); });
+    main.appendChild(addBtn);
+
+    if (!services.length) { main.appendChild(h("div", { class: "empty" }, ["Aún no hay servicios."])); return; }
+
+    var list = h("div", { class: "list" }, []);
+    services.forEach(function (s, idx) {
+      var up = h("button", {}, ["↑"]); if (idx === 0) up.disabled = true;
+      up.addEventListener("click", function () { moveService(services, idx, -1, main); });
+      var down = h("button", {}, ["↓"]); if (idx === services.length - 1) down.disabled = true;
+      down.addEventListener("click", function () { moveService(services, idx, 1, main); });
+
+      var thumb = s.image_url ? h("img", { class: "thumb", src: s.image_url, alt: "" }) : h("div", { class: "thumb" }, []);
+
+      var acts = h("div", { class: "cat-acts" }, []);
+      var edit = h("button", { class: "mini" }, ["Editar"]); edit.addEventListener("click", function () { openServiceForm(s, main); });
+      var photo = h("button", { class: "mini" }, ["Subir foto"]); photo.addEventListener("click", function () { openPhotoForm(s, main); });
+      acts.appendChild(edit); acts.appendChild(photo);
+      if (s.active) { var off = h("button", { class: "mini warn" }, ["Desactivar"]); off.addEventListener("click", function () { toggleActive("services", s.id, false, s.name, main); }); acts.appendChild(off); }
+      else { var on = h("button", { class: "mini ok" }, ["Activar"]); on.addEventListener("click", function () { toggleActive("services", s.id, true, s.name, main); }); acts.appendChild(on); }
+
+      var top = h("div", { style: "display:flex;gap:12px;align-items:center" }, [
+        h("div", { class: "reorder" }, [up, down]),
+        thumb,
+        h("div", { class: "cat-mid" }, [
+          h("strong", {}, [s.name]),
+          s.description ? h("p", {}, [s.description]) : null,
+          h("div", { class: "meta" }, ["Orden " + s.display_order + " · " + s.options.length + " subservicio" + (s.options.length === 1 ? "" : "s")]),
+        ]),
+        s.active ? null : h("span", { class: "badge-off" }, ["Inactivo"]),
+      ]);
+      list.appendChild(h("div", { class: "cat-item" + (s.active ? "" : " dim"), style: "flex-direction:column;align-items:stretch" }, [top, acts]));
+    });
+    main.appendChild(list);
+  }
+
+  // Renumber display_order 1..n after swapping two neighbours.
+  async function moveService(services, idx, dir, main) {
+    var j = idx + dir;
+    if (j < 0 || j >= services.length) return;
+    var arr = services.slice();
+    var tmp = arr[idx]; arr[idx] = arr[j]; arr[j] = tmp;
+    try {
+      for (var k = 0; k < arr.length; k++) {
+        if (arr[k].display_order !== k + 1) {
+          await api("/services/" + arr[k].id, { method: "PATCH", body: { display_order: k + 1 } });
+        }
+      }
+      renderCatalogo(main);
+    } catch (e) { toast(e.message); }
+  }
+
+  function openServiceForm(service, main) {
+    var isNew = !service;
+    var nameI = h("input", { type: "text", value: service ? service.name : "", placeholder: "Uñas, Makeup…" });
+    var descI = h("textarea", { placeholder: "Descripción corta" }, []);
+    if (service && service.description) descI.value = service.description;
+    var orderI = h("input", { type: "number", min: "1", value: service ? service.display_order : "" });
+    var err = h("div", { class: "err" }, []);
+    var saveB = h("button", { class: "btn btn-primary" }, [isNew ? "Crear servicio" : "Guardar"]);
+
+    var nodes = [
+      h("label", { class: "field" }, [h("label", {}, ["Nombre"]), nameI]),
+      h("label", { class: "field" }, [h("label", {}, ["Descripción"]), descI]),
+      h("label", { class: "field" }, [h("label", {}, ["Orden"]), orderI]),
+    ];
+
+    var picked = null;
+    if (isNew) {
+      var prev = h("img", { class: "imgprev", style: "display:none" });
+      var fileI = h("input", { type: "file", accept: "image/jpeg,image/png,image/webp" });
+      fileI.addEventListener("change", async function () {
+        var f = fileI.files[0]; if (!f) return; err.textContent = "";
+        try { picked = await prepImage(f); prev.src = picked.preview; prev.style.display = "block"; }
+        catch (e) { picked = null; err.textContent = e.message; }
+      });
+      nodes.push(h("label", { class: "field" }, [h("label", {}, ["Foto (opcional)"]), fileI]));
+      nodes.push(prev);
+      nodes.push(h("div", { class: "filehint" }, ["JPG, PNG o WEBP · máx 5 MB · se redimensiona a 1200px"]));
+    }
+
+    var close;
+    saveB.addEventListener("click", async function () {
+      err.textContent = "";
+      var name = nameI.value.trim();
+      if (!name) { err.textContent = "El nombre es obligatorio."; return; }
+      var bodyObj = { name: name, description: descI.value.trim() };
+      var ord = parseInt(orderI.value, 10);
+      if (Number.isFinite(ord)) bodyObj.display_order = ord;
+      saveB.disabled = true; saveB.textContent = "Guardando…";
+      try {
+        if (isNew) {
+          var res = await api("/services", { method: "POST", body: bodyObj });
+          if (picked && res.service) {
+            await api("/services/" + res.service.id + "/image", { method: "POST", body: { data: picked.data, contentType: picked.contentType } });
+          }
+          toast("Servicio creado ✓");
+        } else {
+          await api("/services/" + service.id, { method: "PATCH", body: bodyObj });
+          toast("Servicio actualizado ✓");
+        }
+        close(); renderCatalogo(main);
+      } catch (e) {
+        err.textContent = e.message;
+        saveB.disabled = false; saveB.textContent = isNew ? "Crear servicio" : "Guardar";
+      }
+    });
+
+    nodes.push(h("div", { class: "actions" }, [err, saveB]));
+    close = modal(isNew ? "Nuevo servicio" : "Editar servicio", nodes);
+  }
+
+  function openPhotoForm(service, main) {
+    var picked = null;
+    var prev = h("img", { class: "imgprev", src: service.image_url || "", style: service.image_url ? "" : "display:none" });
+    var fileI = h("input", { type: "file", accept: "image/jpeg,image/png,image/webp" });
+    var err = h("div", { class: "err" }, []);
+    var saveB = h("button", { class: "btn btn-primary" }, ["Subir foto"]);
+    saveB.disabled = true;
+
+    fileI.addEventListener("change", async function () {
+      var f = fileI.files[0]; if (!f) return; err.textContent = "";
+      try { picked = await prepImage(f); prev.src = picked.preview; prev.style.display = "block"; saveB.disabled = false; }
+      catch (e) { picked = null; saveB.disabled = true; err.textContent = e.message; }
+    });
+
+    var close;
+    saveB.addEventListener("click", async function () {
+      if (!picked) return;
+      saveB.disabled = true; saveB.textContent = "Subiendo…";
+      try {
+        await api("/services/" + service.id + "/image", { method: "POST", body: { data: picked.data, contentType: picked.contentType } });
+        toast("Foto actualizada ✓"); close(); renderCatalogo(main);
+      } catch (e) { err.textContent = e.message; saveB.disabled = false; saveB.textContent = "Subir foto"; }
+    });
+
+    close = modal("Cambiar foto · " + service.name, [
+      h("div", { class: "filehint" }, ["Vista previa:"]),
+      prev,
+      h("label", { class: "field" }, [h("label", {}, ["Elegir imagen"]), fileI]),
+      h("div", { class: "filehint" }, ["JPG, PNG o WEBP · máx 5 MB · se redimensiona a 1200px"]),
+      h("div", { class: "actions" }, [err, saveB]),
+    ]);
+  }
+
+  // ── SUBSERVICIOS ──
+  function renderSubservicios(main, services) {
+    if (!services.length) { main.appendChild(h("div", { class: "empty" }, ["Primero crea un servicio."])); return; }
+    if (catFilter === null || !services.some(function (s) { return s.id === catFilter; })) catFilter = services[0].id;
+
+    var sel = h("select", {
+      onchange: function (e) { catFilter = parseInt(e.target.value, 10); renderCatalogo(main); },
+    }, services.map(function (s) {
+      return h("option", { value: s.id }, [s.name + (s.active ? "" : " (inactivo)")]);
+    }));
+    main.appendChild(h("label", { class: "field" }, [h("label", {}, ["Servicio padre"]), sel]));
+    sel.value = String(catFilter);
+
+    var parent = services.find(function (s) { return s.id === catFilter; });
+
+    var addBtn = h("button", { class: "btn btn-primary", style: "margin-bottom:14px" }, ["+ Nuevo subservicio"]);
+    addBtn.addEventListener("click", function () { openOptionForm(null, parent, main); });
+    main.appendChild(addBtn);
+
+    var opts = parent.options || [];
+    if (!opts.length) { main.appendChild(h("div", { class: "empty" }, ["Sin subservicios en " + parent.name + "."])); return; }
+
+    var list = h("div", { class: "list" }, opts.map(function (o) {
+      var acts = h("div", { class: "cat-acts" }, []);
+      var edit = h("button", { class: "mini" }, ["Editar"]); edit.addEventListener("click", function () { openOptionForm(o, parent, main); });
+      acts.appendChild(edit);
+      if (o.active) { var off = h("button", { class: "mini warn" }, ["Desactivar"]); off.addEventListener("click", function () { toggleActive("service-options", o.id, false, o.name, main); }); acts.appendChild(off); }
+      else { var on = h("button", { class: "mini ok" }, ["Activar"]); on.addEventListener("click", function () { toggleActive("service-options", o.id, true, o.name, main); }); acts.appendChild(on); }
+
+      var top = h("div", { style: "display:flex;gap:12px;align-items:flex-start" }, [
+        h("div", { class: "cat-mid" }, [
+          h("strong", {}, [o.name]),
+          o.description ? h("p", {}, [o.description]) : null,
+          h("div", { class: "meta" }, [money(o.price) + " · " + o.duration_minutes + " min"]),
+        ]),
+        o.active ? null : h("span", { class: "badge-off" }, ["Inactivo"]),
+      ]);
+      return h("div", { class: "cat-item" + (o.active ? "" : " dim"), style: "flex-direction:column;align-items:stretch" }, [top, acts]);
+    }));
+    main.appendChild(list);
+  }
+
+  function openOptionForm(option, parent, main) {
+    var isNew = !option;
+    var nameI = h("input", { type: "text", value: option ? option.name : "", placeholder: "Manicure gelish…" });
+    var descI = h("textarea", { placeholder: "Descripción corta" }, []);
+    if (option && option.description) descI.value = option.description;
+    var priceI = h("input", { type: "number", min: "0", step: "1", inputmode: "numeric", value: option ? option.price : "" });
+    var durI = h("input", { type: "number", min: "1", step: "1", inputmode: "numeric", value: option ? option.duration_minutes : "" });
+    var err = h("div", { class: "err" }, []);
+    var saveB = h("button", { class: "btn btn-primary" }, [isNew ? "Crear subservicio" : "Guardar"]);
+
+    var close;
+    saveB.addEventListener("click", async function () {
+      err.textContent = "";
+      var name = nameI.value.trim();
+      if (!name) { err.textContent = "El nombre es obligatorio."; return; }
+      var price = Number(priceI.value);
+      if (!isFinite(price) || price < 0) { err.textContent = "Precio inválido."; return; }
+      var dur = parseInt(durI.value, 10);
+      if (!isFinite(dur) || dur <= 0) { err.textContent = "Duración inválida."; return; }
+      var bodyObj = { name: name, description: descI.value.trim(), price: price, duration_minutes: dur };
+      saveB.disabled = true; saveB.textContent = "Guardando…";
+      try {
+        if (isNew) { bodyObj.service_id = parent.id; await api("/service-options", { method: "POST", body: bodyObj }); toast("Subservicio creado ✓"); }
+        else { await api("/service-options/" + option.id, { method: "PATCH", body: bodyObj }); toast("Subservicio actualizado ✓"); }
+        close(); renderCatalogo(main);
+      } catch (e) { err.textContent = e.message; saveB.disabled = false; saveB.textContent = isNew ? "Crear subservicio" : "Guardar"; }
+    });
+
+    close = modal((isNew ? "Nuevo subservicio" : "Editar subservicio") + " · " + parent.name, [
+      h("label", { class: "field" }, [h("label", {}, ["Nombre"]), nameI]),
+      h("label", { class: "field" }, [h("label", {}, ["Descripción"]), descI]),
+      h("div", { class: "row2" }, [
+        h("label", { class: "field" }, [h("label", {}, ["Precio (MXN)"]), priceI]),
+        h("label", { class: "field" }, [h("label", {}, ["Duración (min)"]), durI]),
+      ]),
+      h("div", { class: "actions" }, [err, saveB]),
+    ]);
   }
 
   // ══════════════════════════════════════════════════════════════

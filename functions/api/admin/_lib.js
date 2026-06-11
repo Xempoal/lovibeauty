@@ -114,6 +114,85 @@ export async function sb(env, path, options) {
   return data;
 }
 
+// ─── Supabase Storage (service-images bucket) ────────────────────────────────
+export const IMAGE_BUCKET = 'service-images';
+
+// Decode a base64 string (no data-URL prefix) into a Uint8Array.
+export function b64ToBytes(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+// Upload (upsert) raw bytes to the bucket. Returns the public URL.
+export async function storageUpload(env, path, bytes, contentType) {
+  const base = env.SUPABASE_URL.replace(/\/$/, '');
+  const res = await fetch(base + '/storage/v1/object/' + IMAGE_BUCKET + '/' + path, {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY,
+      'content-type': contentType,
+      'x-upsert': 'true',
+    },
+    body: bytes,
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    const err = new Error('Storage upload ' + res.status + ': ' + t);
+    err.status = res.status;
+    throw err;
+  }
+  return base + '/storage/v1/object/public/' + IMAGE_BUCKET + '/' + path;
+}
+
+// Delete an object by its in-bucket path. Best-effort (never throws).
+export async function storageDelete(env, path) {
+  try {
+    const base = env.SUPABASE_URL.replace(/\/$/, '');
+    await fetch(base + '/storage/v1/object/' + IMAGE_BUCKET + '/' + path, {
+      method: 'DELETE',
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY,
+      },
+    });
+  } catch (_) { /* ignore */ }
+}
+
+// If a stored image_url points at our bucket, return its in-bucket path; else null.
+export function bucketPathFromUrl(url) {
+  if (!url) return null;
+  const marker = '/storage/v1/object/public/' + IMAGE_BUCKET + '/';
+  const i = url.indexOf(marker);
+  return i === -1 ? null : url.slice(i + marker.length);
+}
+
+// ─── slug ────────────────────────────────────────────────────────────────────
+export function slugify(text) {
+  return String(text || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // strip accents
+    .toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'item';
+}
+
+// ─── deactivation guard ──────────────────────────────────────────────────────
+// How many bookings in pending_payment/confirmed reference any of these service
+// option ids. Used to block deactivating a service/option that still has active
+// appointments. Completed (historical) bookings are ignored on purpose.
+export async function activeBookingCount(env, optionIds) {
+  if (!optionIds || optionIds.length === 0) return 0;
+  const inList = '(' + optionIds.join(',') + ')';
+  const rows = await sb(
+    env,
+    'bookings?select=id&status=in.(pending_payment,confirmed)&service_option_id=in.' + inList
+  );
+  return (rows || []).length;
+}
+
 // ─── PIN hashing (SHA-256 + random per-PIN salt) ─────────────────────────────
 // Stored format: "sha256$<saltHex>$<digestHex>". The owner's PIN lives hashed in
 // business_config.admin_pin, so even a DB dump never reveals it in plaintext.
