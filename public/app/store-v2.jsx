@@ -206,10 +206,77 @@ function whatsAppUrlV(appt) {
 const svcV = (id) => SERVICES_V2.find(s => s.id === id);
 const staffOfV = (id) => STAFF_V2.find(s => s.id === id);
 
+// ─── Supabase-aware helpers (used by the real booking flow) ───
+// Compute the list of free start times for a given date, given the busy ranges
+// returned by the `get_availability` RPC, the business hours map, and the
+// service option's duration. Step: 30 minutes.
+//
+//   busyRanges:    [{ busy_start: 'HH:MM:SS', busy_end: 'HH:MM:SS', source }]
+//   businessHours: { 0..6: ['HH:MM','HH:MM'] | null }
+//   duration:      minutes (number)
+//   dateStr:       'YYYY-MM-DD'  (so we can skip past slots when it's today)
+function computeFreeSlotsV(busyRanges, businessHours, duration, dateStr) {
+  const d = fromDateStrV(dateStr);
+  const hours = businessHours[d.getDay()];
+  if (!hours) return [];
+  const [open, close] = hours.map(toMinV);
+  const ranges = (busyRanges || []).map(b => ({
+    start: toMinV((b.busy_start || '').slice(0, 5)),
+    end:   toMinV((b.busy_end   || '').slice(0, 5)),
+  }));
+  const now = new Date();
+  const isToday = dateStr === toDateStrV(now);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const out = [];
+  for (let m = open; m + duration <= close; m += 30) {
+    if (isToday && m <= nowMin) continue;
+    const end = m + duration;
+    const clash = ranges.some(r => m < r.end && end > r.start);
+    if (!clash) out.push(toHHMMV(m));
+  }
+  return out;
+}
+
+// Build the list of next N open dates given the business hours map.
+function nextOpenDatesV(businessHours, n) {
+  n = n || 14;
+  const out = [];
+  let d = todayStrV();
+  for (let i = 0; out.length < n && i < n * 3; i++) {
+    const dow = fromDateStrV(d).getDay();
+    if (businessHours[dow]) out.push(d);
+    d = addDaysV(d, 1);
+  }
+  return out;
+}
+
+// WhatsApp message used when the customer sends the transfer receipt.
+function buildWhatsMessageV(serviceOptionName, dateStr, time, customerName) {
+  return 'Hola, reservé una cita de ' + serviceOptionName +
+    ' para ' + fmtDateV(dateStr) +
+    ' a las ' + fmtTimeV(time) + '.' +
+    (customerName ? ' Soy ' + customerName + '.' : '') +
+    ' Adjunto mi comprobante.';
+}
+function whatsBookingUrlV(serviceOptionName, dateStr, time, customerName) {
+  return 'https://wa.me/' + WHATS_NUM_V2 +
+    '?text=' + encodeURIComponent(buildWhatsMessageV(serviceOptionName, dateStr, time, customerName));
+}
+
+// Format a millisecond duration as M:SS (minutes:seconds).
+function fmtCountdownV(ms) {
+  if (ms < 0) ms = 0;
+  const totalSec = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return m + ':' + pad2v(s);
+}
+
 Object.assign(window, {
   SERVICES_V2, CATEGORIES_V2, SPECIAL_CAT_V2, STAFF_V2, HOURS_V2, DEPOSIT_V2, BANK_V2, WHATS_NUM_V2, ADMIN_EMAIL_V2, ADMIN_PASS_V2,
   pad2v, toDateStrV, fromDateStrV, todayStrV, addDaysV, toMinV, toHHMMV, fmtDateV, fmtDateShortV, fmtDowV, fmtTimeV, fmtMoneyV,
   DOW_V, DOW_SHORT_V, MONTHS_V, isOpenDayV,
   loadDBV, saveDBV, loadSessionV, saveSessionV, uidV, mkFolioV,
   getSlotsV, getAutoSlots, STATUS_META_V, googleCalUrlV, downloadICSV, whatsAppUrlV, svcV, staffOfV,
+  computeFreeSlotsV, nextOpenDatesV, whatsBookingUrlV, fmtCountdownV,
 });

@@ -78,13 +78,14 @@ function SheetV(props) {
 
 function DateStripV(props) {
   var days = _uM(function() {
+    if (props.dates && props.dates.length) return props.dates;
     var out = [], d = todayStrV();
     for (var i = 0; out.length < 21 && i < 30; i++) {
       if (isOpenDayV(d)) out.push(d);
       d = addDaysV(d, 1);
     }
     return out;
-  }, []);
+  }, [props.dates]);
   return React.createElement('div', { className: 'lv-datestrip' },
     days.map(function(ds, i) {
       var date = fromDateStrV(ds);
@@ -102,7 +103,16 @@ function DateStripV(props) {
 }
 
 function SlotGridV(props) {
-  var slots = props.slots, value = props.value, onChange = props.onChange;
+  // Accepts either an array of strings ['09:00', '09:30', ...] OR an array of
+  // { time, staffId? } objects. Strings get normalized into { time } objects.
+  var raw = props.slots || [];
+  var slots = raw.map(function(s) { return typeof s === 'string' ? { time: s } : s; });
+  var value = props.value, onChange = props.onChange;
+  if (props.loading) {
+    return React.createElement('div', { className: 'lv-empty-slots' },
+      React.createElement('p', null, 'Buscando horarios\u2026')
+    );
+  }
   if (!slots.length) {
     return React.createElement('div', { className: 'lv-empty-slots' },
       React.createElement('p', null, 'No hay horarios este d\u00eda'),
@@ -118,13 +128,14 @@ function SlotGridV(props) {
       React.createElement('div', { className: 'lv-slots' },
         p.list.map(function(slot, i) {
           var sel = value && value.time === slot.time;
+          var staff = slot.staffId ? staffOfV(slot.staffId) : null;
           return React.createElement('button', {
             key: slot.time, className: 'lv-slot' + (sel ? ' sel' : ''),
             style: { animationDelay: (i * 30) + 'ms' },
             onClick: function() { onChange(slot); }
           },
             React.createElement('span', { className: 'lv-slot-time' }, fmtTimeV(slot.time)),
-            React.createElement('span', { className: 'lv-slot-staff' }, 'con ' + staffOfV(slot.staffId).name)
+            staff && React.createElement('span', { className: 'lv-slot-staff' }, 'con ' + staff.name)
           );
         })
       )
@@ -161,7 +172,27 @@ function ToastV(props) {
   return React.createElement('div', { className: 'lv-toast', key: props.msg.id }, props.msg.text);
 }
 
+// Ticking countdown. Re-renders every second until `targetMs` passes. Calls
+// onExpire once when it crosses zero. Output is just the M:SS string; wrap it
+// in whatever element you need.
+function CountdownV(props) {
+  var now = _uS(Date.now());
+  _uE(function() {
+    var id = setInterval(function() {
+      var t = Date.now();
+      now[1](t);
+      if (t >= props.targetMs && props.onExpire) {
+        clearInterval(id);
+        props.onExpire();
+      }
+    }, 1000);
+    return function() { clearInterval(id); };
+  }, [props.targetMs]);
+  var remaining = props.targetMs - now[0];
+  return fmtCountdownV(remaining);
+}
+
 Object.assign(window, {
   useReveal, PageTransition, BadgeV, AvatarV, GlassBtn, FieldV, SheetV,
-  DateStripV, SlotGridV, ApptCardV, ToastV,
+  DateStripV, SlotGridV, ApptCardV, ToastV, CountdownV,
 });
