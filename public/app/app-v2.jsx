@@ -8,8 +8,11 @@
 // The admin panel and "Mis citas" still read from the legacy localStorage db
 // for now; those move to Supabase in a follow-up session.
 
+// Editorial service card: scroll reveal (clip-path), giant index number,
+// alternating tilt + arch mask, with the original scroll parallax on the image.
 function CategoryCard(props) {
-  var ref = _uR(null);
+  var revealed = useReveal(0.12);
+  var ref = revealed[0], isIn = revealed[1];
   var parallax = _uS(0);
 
   _uE(function() {
@@ -22,7 +25,7 @@ function CategoryCard(props) {
       var center = sr.top + sr.height / 2;
       var dist = r.top + r.height / 2 - center;
       var p = Math.max(-1, Math.min(1, dist / sr.height));
-      parallax[1](p * 24);
+      parallax[1](p * 26);
     }
     var scroller = ref.current ? ref.current.closest('.lv-scroll-area') : null;
     if (scroller) scroller.addEventListener('scroll', onScroll, { passive: true });
@@ -35,24 +38,33 @@ function CategoryCard(props) {
   }, []);
 
   var c = props.category;
-  var big = props.big;
+  var feature = props.feature;
+  var itemCls = 'lv-ed-item'
+    + (isIn ? ' is-in' : '')
+    + (feature ? ' feature' : (props.index % 2 === 0 ? ' t-l' : ' t-r'));
   return (
-    <button ref={ref}
-      className={'lv-cat-card' + (big ? ' big' : '')}
-      onClick={function() { props.onPick(c); }}>
-      <div className="lv-cat-img" style={{ backgroundImage: 'url(' + c.image_url + ')', transform: 'translateY(' + parallax[0] + 'px) scale(1.18)' }}></div>
-      <div className="lv-cat-shade"></div>
-      <div className="lv-cat-content">
-        <div className="lv-cat-titles">
-          <h3>{c.name}</h3>
-          <p>{c.description}</p>
+    <div ref={ref} className={itemCls}>
+      <span className="lv-ed-num" aria-hidden="true">{props.index < 9 ? '0' + (props.index + 1) : props.index + 1}</span>
+      <button
+        className={'lv-ed-card' + (props.arch ? ' arch' : '') + (feature ? ' feature' : '')}
+        onClick={function() { props.onPick(c); }}>
+        <div className="lv-ed-clip">
+          <div className="lv-ed-imgwrap">
+            <div className="lv-ed-img" style={{ backgroundImage: 'url(' + c.image_url + ')', transform: 'translateY(' + parallax[0] + 'px) scale(1.18)' }}></div>
+            <div className="lv-ed-shade"></div>
+          </div>
+          <div className="lv-ed-content">
+            <h3>{c.name}</h3>
+            <p>{c.description}</p>
+            <span className="lv-ed-cta">
+              Agendar
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </span>
+          </div>
+          {feature && <span className="lv-ed-ribbon">Especial</span>}
         </div>
-        <span className="lv-cat-cta">
-          Agendar
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </span>
-      </div>
-    </button>
+      </button>
+    </div>
   );
 }
 
@@ -63,6 +75,7 @@ function HomeV(props) {
   // Convention: the row whose slug is 'especiales' is the feature card.
   var main    = services.filter(function(s) { return s.slug !== 'especiales'; });
   var special = services.find(function(s) { return s.slug === 'especiales'; });
+  var ordered = special ? main.concat([special]) : main;
 
   return (
     <div className="lv-home" data-screen-label="Inicio">
@@ -94,25 +107,52 @@ function HomeV(props) {
         </div>
       </section>
 
+      {!loading && services.length > 0 && (
+        <div className="lv-marquee" aria-hidden="true">
+          <div className="lv-marquee-track">
+            {[0, 1].map(function(seg) {
+              return (
+                <div className="lv-marquee-seg" key={seg}>
+                  {services.map(function(s) {
+                    return (
+                      <React.Fragment key={s.id}>
+                        <span>{s.name}</span>
+                        <i>✦</i>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {loading && (
-        <section className="lv-cat-special">
-          <span className="lv-sec-eyebrow">Cargando servicios…</span>
+        <section className="lv-ed-skel">
+          <span className="lv-skel"></span>
+          <span className="lv-skel"></span>
         </section>
       )}
 
-      {!loading && main.length > 0 && (
-        <section className="lv-cat-grid">
-          {main.map(function(c) {
-            return <CategoryCard key={c.id} category={c} onPick={props.onPick} />;
-          })}
-        </section>
-      )}
-
-      {!loading && special && (
-        <section className="lv-cat-special">
-          <span className="lv-sec-eyebrow">Especial del estudio</span>
-          <CategoryCard category={special} big={true} onPick={props.onPick} />
-        </section>
+      {!loading && ordered.length > 0 && (
+        <React.Fragment>
+          <div className="lv-ed-head">
+            <span className="lv-sec-eyebrow">Nuestros servicios</span>
+            <h2>Elige tu <em>ritual</em></h2>
+          </div>
+          <section className="lv-editorial">
+            {ordered.map(function(c, i) {
+              var isFeature = special && c.id === special.id;
+              return (
+                <CategoryCard key={c.id} category={c} index={i}
+                  arch={!isFeature && i % 2 === 0}
+                  feature={isFeature}
+                  onPick={props.onPick} />
+              );
+            })}
+          </section>
+        </React.Fragment>
       )}
 
       <section className="lv-foot-section">
@@ -120,6 +160,18 @@ function HomeV(props) {
           <span className="lv-foot-eyebrow">LoviBeauty Studio</span>
           <p>Lun–Vie · 9 am – 8 pm<br />Sábado · 9 am – 6 pm</p>
           <button className="lv-linkbtn" onClick={props.onAdminPrompt}>Acceso del estudio</button>
+        </div>
+        <div className="lv-powered">
+          <a className="lv-powered-link" href="https://borestudio.com" target="_blank" rel="noopener">
+            Powered by <strong>Boren Studio</strong>
+          </a>
+          <a className="lv-ig" href="https://www.instagram.com/boren.studio" target="_blank" rel="noopener" aria-label="Instagram de Boren Studio">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="currentColor" strokeWidth="1.8"/>
+              <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="1.8"/>
+              <circle cx="17.4" cy="6.6" r="1.3" fill="currentColor"/>
+            </svg>
+          </a>
         </div>
       </section>
     </div>
