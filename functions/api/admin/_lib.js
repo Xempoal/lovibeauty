@@ -114,6 +114,52 @@ export async function sb(env, path, options) {
   return data;
 }
 
+// ─── PIN hashing (SHA-256 + random per-PIN salt) ─────────────────────────────
+// Stored format: "sha256$<saltHex>$<digestHex>". The owner's PIN lives hashed in
+// business_config.admin_pin, so even a DB dump never reveals it in plaintext.
+function bufToHex(buf) {
+  const b = new Uint8Array(buf);
+  let s = '';
+  for (let i = 0; i < b.length; i++) s += b[i].toString(16).padStart(2, '0');
+  return s;
+}
+function randomHex(bytes) {
+  const a = new Uint8Array(bytes);
+  crypto.getRandomValues(a);
+  return bufToHex(a.buffer);
+}
+
+export async function hashPin(pin, salt) {
+  salt = salt || randomHex(16);
+  const enc = new TextEncoder();
+  const digest = await crypto.subtle.digest('SHA-256', enc.encode(salt + ':' + String(pin)));
+  return 'sha256$' + salt + '$' + bufToHex(digest);
+}
+
+export async function verifyPin(pin, stored) {
+  if (!stored || typeof stored !== 'string') return false;
+  const parts = stored.split('$');
+  if (parts.length !== 3 || parts[0] !== 'sha256') return false;
+  const recomputed = await hashPin(pin, parts[1]);
+  // constant-time-ish compare
+  if (recomputed.length !== stored.length) return false;
+  let diff = 0;
+  for (let i = 0; i < recomputed.length; i++) diff |= recomputed.charCodeAt(i) ^ stored.charCodeAt(i);
+  return diff === 0;
+}
+
+// The owner-set PIN hash, or null when none is stored (or the table doesn't
+// exist yet). Read with the service-role key, which bypasses RLS — the anon
+// role is blocked from this row by the policy in migration 003.
+export async function getStoredAdminPin(env) {
+  try {
+    const rows = await sb(env, 'business_config?select=value&key=eq.admin_pin');
+    return rows && rows[0] && rows[0].value ? rows[0].value : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 // Read the request JSON body, tolerating an empty body.
 export async function readJson(request) {
   try {

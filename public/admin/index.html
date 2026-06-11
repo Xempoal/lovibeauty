@@ -621,6 +621,36 @@
     main.appendChild(h("div", { class: "card" }, [fWhats.node, fHold.node]));
     main.appendChild(h("div", { style: "margin-top:16px" }, [err, saveBtn]));
     main.appendChild(h("p", { style: "font-size:12.5px;color:var(--muted);text-align:center;margin-top:14px" }, ["Estos datos se muestran a las clientas al pagar."]));
+
+    // ── Cambiar PIN ──
+    var pinCur = h("input", { type: "password", inputmode: "numeric", maxlength: "8", placeholder: "PIN actual", autocomplete: "off" });
+    var pinNew = h("input", { type: "password", inputmode: "numeric", maxlength: "8", placeholder: "6 a 8 dígitos", autocomplete: "new-password" });
+    var pinConf = h("input", { type: "password", inputmode: "numeric", maxlength: "8", placeholder: "Repite el PIN nuevo", autocomplete: "new-password" });
+    var pinErr = h("div", { class: "err" }, []);
+    var pinBtn = h("button", { class: "btn btn-glass" }, ["Cambiar PIN"]);
+
+    pinBtn.addEventListener("click", async function () {
+      pinErr.textContent = "";
+      var cur = pinCur.value.trim(), nw = pinNew.value.trim(), cf = pinConf.value.trim();
+      if (!/^\d{6,8}$/.test(nw)) { pinErr.textContent = "El PIN nuevo debe tener entre 6 y 8 dígitos."; return; }
+      if (nw !== cf) { pinErr.textContent = "El PIN nuevo no coincide."; return; }
+      if (!cur) { pinErr.textContent = "Ingresa tu PIN actual."; return; }
+      pinBtn.disabled = true; pinBtn.textContent = "Guardando…";
+      try {
+        await api("/pin", { method: "POST", body: { current_pin: cur, new_pin: nw, confirm_pin: cf } });
+        toast("PIN actualizado ✓");
+        pinCur.value = pinNew.value = pinConf.value = "";
+      } catch (e) { pinErr.textContent = e.message; }
+      finally { pinBtn.disabled = false; pinBtn.textContent = "Cambiar PIN"; }
+    });
+
+    main.appendChild(h("div", { class: "sec" }, ["Seguridad · cambiar PIN"]));
+    main.appendChild(h("div", { class: "card" }, [
+      h("label", { class: "field" }, [h("label", {}, ["PIN actual"]), pinCur]),
+      h("label", { class: "field" }, [h("label", {}, ["PIN nuevo"]), pinNew]),
+      h("label", { class: "field" }, [h("label", {}, ["Confirmar PIN nuevo"]), pinConf]),
+      pinErr, pinBtn,
+    ]));
   }
 
   // keep the cancelaciones badge in sync after a fetch

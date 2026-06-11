@@ -72,8 +72,13 @@
       // is RLS-public for SELECT; the admin panel writes it via service_role.
       // Returns a plain { key: value } map. Never throws — falls back to {} so a
       // missing table (pre-migration) doesn't break the booking flow.
+      // Only ask for the public keys — never the admin_pin row. RLS also blocks
+      // anon from reading admin_pin (migration 003), this is defense in depth.
+      const PUBLIC_KEYS = ['bank_clabe', 'bank_name', 'bank_holder', 'whatsapp_number', 'hold_minutes'];
       try {
-        const rows = await unwrap(sb.from('business_config').select('key, value'));
+        const rows = await unwrap(
+          sb.from('business_config').select('key, value').in('key', PUBLIC_KEYS)
+        );
         const map = {};
         (rows || []).forEach((r) => { map[r.key] = r.value; });
         return map;

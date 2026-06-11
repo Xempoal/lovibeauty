@@ -18,7 +18,7 @@ export async function onRequestGet({ request, env }) {
   try {
     const rows = await sb(env, 'business_config?select=key,value');
     const config = {};
-    (rows || []).forEach(function (r) { config[r.key] = r.value; });
+    (rows || []).forEach(function (r) { if (r.key !== 'admin_pin') config[r.key] = r.value; });
     return json({ config });
   } catch (err) {
     return serverError(err.message);
