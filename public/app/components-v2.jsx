@@ -76,6 +76,9 @@ function SheetV(props) {
   );
 }
 
+// Premium month-view calendar. Keeps the old DateStripV API:
+// { value: 'YYYY-MM-DD' | null, onChange(ds), dates?: ['YYYY-MM-DD', ...] }
+// Only days present in `dates` are selectable; the rest render dimmed.
 function DateStripV(props) {
   var days = _uM(function() {
     if (props.dates && props.dates.length) return props.dates;
@@ -86,19 +89,94 @@ function DateStripV(props) {
     }
     return out;
   }, [props.dates]);
-  return React.createElement('div', { className: 'lv-datestrip' },
-    days.map(function(ds, i) {
-      var date = fromDateStrV(ds);
-      return React.createElement('button', {
-        key: ds, className: 'lv-daycard' + (props.value === ds ? ' sel' : ''),
-        style: { animationDelay: (i * 40) + 'ms' },
-        onClick: function() { props.onChange(ds); }
-      },
-        React.createElement('span', { className: 'lv-day-dow' }, DOW_SHORT_V[date.getDay()]),
-        React.createElement('span', { className: 'lv-day-num' }, date.getDate()),
-        React.createElement('span', { className: 'lv-day-mon' }, MONTHS_V[date.getMonth()].slice(0,3))
-      );
-    })
+
+  var availSet = _uM(function() {
+    var s = {};
+    for (var i = 0; i < days.length; i++) s[days[i]] = true;
+    return s;
+  }, [days]);
+
+  // Months spanned by the available range, as { y, m } pairs.
+  var months = _uM(function() {
+    if (!days.length) return [];
+    var out = [];
+    var first = fromDateStrV(days[0]);
+    var last  = fromDateStrV(days[days.length - 1]);
+    var cur = new Date(first.getFullYear(), first.getMonth(), 1);
+    var end = new Date(last.getFullYear(), last.getMonth(), 1);
+    while (cur <= end) {
+      out.push({ y: cur.getFullYear(), m: cur.getMonth() });
+      cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+    }
+    return out;
+  }, [days]);
+
+  var mi  = _uS(0);  // visible month index
+  var dir = _uS(1);  // 1 = forward slide, -1 = back (for the transition)
+
+  // Follow the selected date when it lands in another month (e.g. default pick).
+  _uE(function() {
+    if (!props.value || !months.length) return;
+    var d = fromDateStrV(props.value);
+    for (var i = 0; i < months.length; i++) {
+      if (months[i].y === d.getFullYear() && months[i].m === d.getMonth()) { mi[1](i); break; }
+    }
+  }, [props.value, months.length]);
+
+  if (!months.length) return null;
+  var safeMi = Math.min(mi[0], months.length - 1);
+  var mo = months[safeMi];
+  var nDays = new Date(mo.y, mo.m + 1, 0).getDate();
+  var lead = (new Date(mo.y, mo.m, 1).getDay() + 6) % 7; // Monday-first offset
+  var today = todayStrV();
+
+  var cells = [];
+  for (var p = 0; p < lead; p++) cells.push(null);
+  for (var d2 = 1; d2 <= nDays; d2++) cells.push(toDateStrV(new Date(mo.y, mo.m, d2)));
+
+  function chevron(dirPath) {
+    return React.createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none' },
+      React.createElement('path', { d: dirPath, stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' })
+    );
+  }
+
+  return React.createElement('div', { className: 'lv-cal' },
+    React.createElement('div', { className: 'lv-cal-head' },
+      React.createElement('button', {
+        className: 'lv-cal-nav', disabled: safeMi === 0, 'aria-label': 'Mes anterior',
+        onClick: function() { dir[1](-1); mi[1](safeMi - 1); }
+      }, chevron('M15 19l-7-7 7-7')),
+      React.createElement('div', { className: 'lv-cal-title', key: 'm' + safeMi },
+        React.createElement('em', null, MONTHS_V[mo.m]),
+        React.createElement('span', null, mo.y)
+      ),
+      React.createElement('button', {
+        className: 'lv-cal-nav', disabled: safeMi >= months.length - 1, 'aria-label': 'Mes siguiente',
+        onClick: function() { dir[1](1); mi[1](safeMi + 1); }
+      }, chevron('M9 5l7 7-7 7'))
+    ),
+    React.createElement('div', { className: 'lv-cal-dows' },
+      ['lun','mar','mié','jue','vie','sáb','dom'].map(function(d3) {
+        return React.createElement('span', { key: d3 }, d3);
+      })
+    ),
+    React.createElement('div', { className: 'lv-cal-grid ' + (dir[0] > 0 ? 'fwd' : 'back'), key: 'g' + safeMi },
+      cells.map(function(ds, i) {
+        if (!ds) return React.createElement('span', { key: 'pad' + i, className: 'lv-cal-cell pad' });
+        var av = !!availSet[ds];
+        var sel = props.value === ds;
+        return React.createElement('button', {
+          key: ds,
+          className: 'lv-cal-cell' + (av ? ' av' : '') + (sel ? ' sel' : '') + (ds === today ? ' today' : ''),
+          disabled: !av,
+          style: { animationDelay: (i * 12) + 'ms' },
+          onClick: function() { props.onChange(ds); }
+        },
+          React.createElement('span', { className: 'lv-cal-num' }, fromDateStrV(ds).getDate()),
+          av && React.createElement('span', { className: 'lv-cal-dot' })
+        );
+      })
+    )
   );
 }
 
@@ -109,8 +187,12 @@ function SlotGridV(props) {
   var slots = raw.map(function(s) { return typeof s === 'string' ? { time: s } : s; });
   var value = props.value, onChange = props.onChange;
   if (props.loading) {
-    return React.createElement('div', { className: 'lv-empty-slots' },
-      React.createElement('p', null, 'Buscando horarios\u2026')
+    return React.createElement('div', { className: 'lv-slotarea' },
+      React.createElement('div', { className: 'lv-skel-row' },
+        [0,1,2,3,4,5].map(function(i) {
+          return React.createElement('span', { key: i, className: 'lv-skel', style: { animationDelay: (i * 90) + 'ms' } });
+        })
+      )
     );
   }
   if (!slots.length) {
@@ -124,7 +206,9 @@ function SlotGridV(props) {
   function Group(p) {
     if (!p.list.length) return null;
     return React.createElement('div', { className: 'lv-slotgroup' },
-      React.createElement('span', { className: 'lv-slotlabel' }, p.icon + ' ' + p.label),
+      React.createElement('div', { className: 'lv-slotdivider' },
+        React.createElement('span', null, p.icon + ' ' + p.label)
+      ),
       React.createElement('div', { className: 'lv-slots' },
         p.list.map(function(slot, i) {
           var sel = value && value.time === slot.time;
@@ -142,6 +226,10 @@ function SlotGridV(props) {
     );
   }
   return React.createElement('div', { className: 'lv-slotarea' },
+    React.createElement('div', { className: 'lv-slot-counter' },
+      React.createElement('span', { className: 'lv-slot-pulse' }),
+      slots.length + (slots.length === 1 ? ' horario disponible' : ' horarios disponibles')
+    ),
     React.createElement(Group, { label: 'Ma\u00f1ana', list: am, icon: '\u2600\uFE0F' }),
     React.createElement(Group, { label: 'Tarde', list: pm, icon: '\uD83C\uDF19' })
   );

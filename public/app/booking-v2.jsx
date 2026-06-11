@@ -227,8 +227,6 @@ function BookingV2(props) {
           <div className="lv-step">
             <h2 className="lv-step-title">¿Qué día te queda?</h2>
             <DateStripV value={date[0]} onChange={selectDate} dates={availableDates} />
-            <div className="lv-sep"></div>
-            <h3 className="lv-sublabel">Horarios disponibles</h3>
             <SlotGridV slots={slots[0]} value={slot[0]} onChange={selectSlot} loading={slotsLoading[0]} />
           </div>
         )}

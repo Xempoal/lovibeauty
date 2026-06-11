@@ -83,6 +83,10 @@ function HomeV(props) {
             <circle cx="280" cy="240" r="180" fill="url(#lv-grad-b)" />
           </svg>
         </div>
+        <span className="lv-spark s1" aria-hidden="true">✦</span>
+        <span className="lv-spark s2" aria-hidden="true">✦</span>
+        <span className="lv-spark s3" aria-hidden="true">✧</span>
+        <span className="lv-spark s4" aria-hidden="true">✦</span>
         <div className="lv-hero-inner">
           <span className="lv-hero-eyebrow">LoviBeauty Studio</span>
           <h1>Tu momento de<br /><em>consentirte</em></h1>
