@@ -234,8 +234,7 @@ function AppV() {
   }
 
   return (
-    <IOSDevice>
-      <div className="lv-root">
+    <div className="lv-root">
         <header className={'lv-header' + (scrolled[0] || view[0] !== 'home' ? ' compact' : '')}>
           <button className="lv-brand" onClick={function() { view[1]('home'); }}>
             <img src="assets/logo.png" alt="" />
@@ -283,7 +282,6 @@ function AppV() {
 
         <ToastV msg={msg[0]} />
       </div>
-    </IOSDevice>
   );
 }
 
