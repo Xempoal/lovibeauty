@@ -8,104 +8,157 @@
 // The admin panel and "Mis citas" still read from the legacy localStorage db
 // for now; those move to Supabase in a follow-up session.
 
-// Editorial service card: scroll reveal (clip-path), giant index number,
-// alternating tilt + arch mask, with the original scroll parallax on the image.
-function CategoryCard(props) {
-  var revealed = useReveal(0.12);
-  var ref = revealed[0], isIn = revealed[1];
-  var parallax = _uS(0);
+// Rotating promo banner carousel (app-style). Auto-advances every 5s, swipeable
+// via native scroll-snap, with dot indicators. Banners come from Supabase
+// (managed in the admin panel); tapping one with a linked service opens it.
+function BannerCarousel(props) {
+  var banners = props.banners || [];
+  var idx = _uS(0);
+  var ref = _uR(null);
 
+  // Auto-advance unless the user is touching the carousel.
   _uE(function() {
-    function onScroll() {
-      if (!ref.current) return;
-      var scroller = ref.current.closest('.lv-scroll-area');
-      if (!scroller) return;
-      var r = ref.current.getBoundingClientRect();
-      var sr = scroller.getBoundingClientRect();
-      var center = sr.top + sr.height / 2;
-      var dist = r.top + r.height / 2 - center;
-      var p = Math.max(-1, Math.min(1, dist / sr.height));
-      parallax[1](p * 26);
-    }
-    var scroller = ref.current ? ref.current.closest('.lv-scroll-area') : null;
-    if (scroller) scroller.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return function() {
-      if (scroller) scroller.removeEventListener('scroll', onScroll);
-      window.removeEventListener('scroll', onScroll);
-    };
-  }, []);
+    if (banners.length < 2) return;
+    var t = setInterval(function() {
+      var el = ref.current;
+      if (!el || el.dataset.touch === '1') return;
+      var w = el.clientWidth;
+      if (!w) return;
+      var i = Math.round(el.scrollLeft / w);
+      var next = (i + 1) % banners.length;
+      el.scrollTo({ left: next * w, behavior: 'smooth' });
+    }, 5000);
+    return function() { clearInterval(t); };
+  }, [banners.length]);
 
-  var c = props.category;
-  var feature = props.feature;
-  var itemCls = 'lv-ed-item'
-    + (isIn ? ' is-in' : '')
-    + (feature ? ' feature' : (props.index % 2 === 0 ? ' t-l' : ' t-r'));
+  function onScroll() {
+    var el = ref.current; if (!el || !el.clientWidth) return;
+    var i = Math.max(0, Math.min(banners.length - 1, Math.round(el.scrollLeft / el.clientWidth)));
+    if (i !== idx[0]) idx[1](i);
+  }
+  function pauseTouch() {
+    var el = ref.current; if (!el) return;
+    el.dataset.touch = '1';
+    clearTimeout(el._touchT);
+    el._touchT = setTimeout(function() { el.dataset.touch = '0'; }, 4000);
+  }
+  function goTo(i) {
+    var el = ref.current; if (!el) return;
+    pauseTouch();
+    el.scrollTo({ left: i * el.clientWidth, behavior: 'smooth' });
+  }
+
+  if (!banners.length) return null;
   return (
-    <div ref={ref} className={itemCls}>
-      <span className="lv-ed-num" aria-hidden="true">{props.index < 9 ? '0' + (props.index + 1) : props.index + 1}</span>
-      <button
-        className={'lv-ed-card' + (props.arch ? ' arch' : '') + (feature ? ' feature' : '')}
-        onClick={function() { props.onPick(c); }}>
-        <div className="lv-ed-clip">
-          <div className="lv-ed-imgwrap">
-            <div className="lv-ed-img" style={{ backgroundImage: 'url(' + c.image_url + ')', transform: 'translateY(' + parallax[0] + 'px) scale(1.18)' }}></div>
-            <div className="lv-ed-shade"></div>
-          </div>
-          <div className="lv-ed-content">
-            <h3>{c.name}</h3>
-            <p>{c.description}</p>
-            <span className="lv-ed-cta">
-              Agendar
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </span>
-          </div>
-          {feature && <span className="lv-ed-ribbon">Especial</span>}
+    <section className="lv-bansec">
+      <div className="lv-bantrack" ref={ref} onScroll={onScroll}
+        onTouchStart={pauseTouch} onMouseDown={pauseTouch}>
+        {banners.map(function(b, i) {
+          return (
+            <button key={b.id} className="lv-banner" onClick={function() { props.onPickBanner(b); }}>
+              {b.image_url
+                ? <div className="lv-banner-img" style={{ backgroundImage: 'url(' + b.image_url + ')' }}></div>
+                : <div className="lv-banner-img lv-banner-grad"></div>}
+              <div className="lv-banner-shade"></div>
+              <span className="lv-banner-spark" aria-hidden="true">✦</span>
+              <div className="lv-banner-body">
+                <h3>{b.title}</h3>
+                {b.subtitle && <p>{b.subtitle}</p>}
+                {b.service_id && (
+                  <span className="lv-banner-cta">
+                    Reservar
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      {banners.length > 1 && (
+        <div className="lv-bandots">
+          {banners.map(function(b, i) {
+            return <button key={b.id} className={'lv-bandot' + (i === idx[0] ? ' on' : '')}
+              aria-label={'Banner ' + (i + 1)} onClick={function() { goTo(i); }}></button>;
+          })}
         </div>
-      </button>
-    </div>
+      )}
+    </section>
   );
 }
+
+// Category as an app-style icon: circular photo bubble with a gradient ring.
+function CategoryIcon(props) {
+  var c = props.category;
+  return (
+    <button className="lv-icon-item" style={{ animationDelay: (props.index * 70) + 'ms' }}
+      onClick={function() { props.onPick(c); }}>
+      <span className="lv-icon-ring">
+        <span className="lv-icon-bubble" style={{ backgroundImage: 'url(' + c.image_url + ')' }}></span>
+      </span>
+      <span className="lv-icon-name">{c.name}</span>
+    </button>
+  );
+}
+
+// Default banner shown until the studio creates its own in the admin panel.
+var DEFAULT_BANNERS_V = [{
+  id: 'default',
+  title: 'Tu momento de consentirte',
+  subtitle: 'Agenda tu cita en menos de un minuto 💕',
+  image_url: null,
+  service_id: null,
+}];
 
 function HomeV(props) {
   var services = props.services || [];
   var loading  = props.loading;
-  // Split the catalog into the main grid and the "special" feature row.
-  // Convention: the row whose slug is 'especiales' is the feature card.
-  var main    = services.filter(function(s) { return s.slug !== 'especiales'; });
-  var special = services.find(function(s) { return s.slug === 'especiales'; });
-  var ordered = special ? main.concat([special]) : main;
+  var banners  = (props.banners && props.banners.length) ? props.banners : DEFAULT_BANNERS_V;
+
+  function pickBanner(b) {
+    if (!b.service_id) return;
+    var svc = services.find(function(s) { return s.id === b.service_id; });
+    if (svc) props.onPick(svc);
+  }
 
   return (
     <div className="lv-home" data-screen-label="Inicio">
-      <section className="lv-hero">
-        <div className="lv-hero-blob" aria-hidden="true">
-          <svg viewBox="0 0 400 400" width="100%" height="100%">
-            <defs>
-              <radialGradient id="lv-grad-a" cx="30%" cy="30%">
-                <stop offset="0%" stopColor="#A4365A" stopOpacity="0.45" />
-                <stop offset="100%" stopColor="#A4365A" stopOpacity="0" />
-              </radialGradient>
-              <radialGradient id="lv-grad-b" cx="70%" cy="70%">
-                <stop offset="0%" stopColor="#D98E73" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="#D98E73" stopOpacity="0" />
-              </radialGradient>
-            </defs>
-            <circle cx="140" cy="160" r="160" fill="url(#lv-grad-a)" />
-            <circle cx="280" cy="240" r="180" fill="url(#lv-grad-b)" />
-          </svg>
-        </div>
+      <div className="lv-apphead">
         <span className="lv-spark s1" aria-hidden="true">✦</span>
-        <span className="lv-spark s2" aria-hidden="true">✦</span>
-        <span className="lv-spark s3" aria-hidden="true">✧</span>
-        <span className="lv-spark s4" aria-hidden="true">✦</span>
-        <div className="lv-hero-inner">
-          <span className="lv-hero-eyebrow">LoviBeauty Studio</span>
-          <h1>Tu momento de<br /><em>consentirte</em></h1>
-          <p>Elige el servicio que te encanta.<br />Agendar te toma menos de un minuto.</p>
-        </div>
-      </section>
+        <span className="lv-spark s2" aria-hidden="true">✧</span>
+        <span className="lv-greet">✦ LoviBeauty Studio</span>
+        <h1>¿Qué te hacemos <em>hoy</em>?</h1>
+      </div>
+
+      {loading && (
+        <section className="lv-home-skel">
+          <span className="lv-skel lv-skel-banner"></span>
+          <div className="lv-skel-iconrow">
+            <span className="lv-skel lv-skel-icon"></span>
+            <span className="lv-skel lv-skel-icon"></span>
+            <span className="lv-skel lv-skel-icon"></span>
+            <span className="lv-skel lv-skel-icon"></span>
+          </div>
+        </section>
+      )}
+
+      {!loading && (
+        <BannerCarousel banners={banners} onPickBanner={pickBanner} />
+      )}
+
+      {!loading && services.length > 0 && (
+        <section className="lv-iconsec">
+          <div className="lv-iconsec-head">
+            <h2>Categorías</h2>
+            <span className="lv-iconsec-hint">Toca para agendar</span>
+          </div>
+          <div className="lv-icon-grid">
+            {services.map(function(c, i) {
+              return <CategoryIcon key={c.id} category={c} index={i} onPick={props.onPick} />;
+            })}
+          </div>
+        </section>
+      )}
 
       {!loading && services.length > 0 && (
         <div className="lv-marquee" aria-hidden="true">
@@ -128,33 +181,6 @@ function HomeV(props) {
         </div>
       )}
 
-      {loading && (
-        <section className="lv-ed-skel">
-          <span className="lv-skel"></span>
-          <span className="lv-skel"></span>
-        </section>
-      )}
-
-      {!loading && ordered.length > 0 && (
-        <React.Fragment>
-          <div className="lv-ed-head">
-            <span className="lv-sec-eyebrow">Nuestros servicios</span>
-            <h2>Elige tu <em>ritual</em></h2>
-          </div>
-          <section className="lv-editorial">
-            {ordered.map(function(c, i) {
-              var isFeature = special && c.id === special.id;
-              return (
-                <CategoryCard key={c.id} category={c} index={i}
-                  arch={!isFeature && i % 2 === 0}
-                  feature={isFeature}
-                  onPick={props.onPick} />
-              );
-            })}
-          </section>
-        </React.Fragment>
-      )}
-
       <section className="lv-foot-section">
         <div className="lv-foot-card">
           <span className="lv-foot-eyebrow">LoviBeauty Studio</span>
@@ -162,7 +188,7 @@ function HomeV(props) {
           <button className="lv-linkbtn" onClick={props.onAdminPrompt}>Acceso del estudio</button>
         </div>
         <div className="lv-powered">
-          <a className="lv-powered-link" href="https://borestudio.com" target="_blank" rel="noopener">
+          <a className="lv-powered-link" href="https://borenstudio.com" target="_blank" rel="noopener">
             Powered by <strong>Boren Studio</strong>
           </a>
           <a className="lv-ig" href="https://www.instagram.com/boren.studio" target="_blank" rel="noopener" aria-label="Instagram de Boren Studio">
@@ -243,6 +269,7 @@ function AppV() {
   var servicesLoading = _uS(true);
   var businessHours = _uS(null);
   var businessConfig = _uS(null); // { bank_clabe, bank_name, ... } from Supabase
+  var banners       = _uS([]);    // home carousel banners (admin-managed)
 
   // Booking flow state.
   var pendingServiceOption = _uS(null); // service_options row
@@ -261,11 +288,13 @@ function AppV() {
       window.lbApi.loadServices(),
       window.lbApi.loadBusinessHours(),
       window.lbApi.loadBusinessConfig(),
+      window.lbApi.loadBanners(),
     ]).then(function(results) {
       if (cancelled) return;
       services[1](results[0]);
       businessHours[1](results[1]);
       businessConfig[1](results[2]);
+      banners[1](results[3]);
       servicesLoading[1](false);
     }).catch(function(err) {
       if (cancelled) return;
@@ -401,6 +430,7 @@ function AppV() {
             {view[0] === 'home' && (
               <HomeV
                 services={services[0]}
+                banners={banners[0]}
                 loading={servicesLoading[0]}
                 onPick={pickService}
                 onAdminPrompt={function() { window.location.assign('/admin/'); }}
@@ -426,6 +456,7 @@ function AppV() {
             {view[0] === 'cuenta' && !user && (
               <HomeV
                 services={services[0]}
+                banners={banners[0]}
                 loading={servicesLoading[0]}
                 onPick={pickService}
                 onAdminPrompt={function() { window.location.assign('/admin/'); }}

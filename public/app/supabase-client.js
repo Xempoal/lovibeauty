@@ -57,6 +57,24 @@
       return rows.map(withFallbackImage);
     },
 
+    async loadBanners() {
+      // Home carousel banners. Never throws — a missing table (pre-migration)
+      // or an RLS hiccup must not break the home, the UI falls back to a
+      // default welcome banner.
+      try {
+        const rows = await unwrap(
+          sb.from('banners')
+            .select('id, title, subtitle, image_url, service_id, display_order')
+            .eq('active', true)
+            .order('display_order')
+        );
+        return rows || [];
+      } catch (e) {
+        console.warn('[lovibeauty] banners no disponibles aún', e && e.message);
+        return [];
+      }
+    },
+
     async loadServiceOptions(serviceId) {
       return unwrap(
         sb.from('service_options')
