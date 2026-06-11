@@ -17,6 +17,16 @@ function BookingV2(props) {
   var user          = props.user;
   var toast         = props.toast;
 
+  // Business config from Supabase (bank details, WhatsApp, hold window). Each
+  // value falls back to the legacy constant when the row is empty/missing so the
+  // flow still works before the studio fills it in.
+  var cfg          = props.businessConfig || {};
+  var bankName     = cfg.bank_name   || BANK_V2.banco;
+  var bankHolder   = cfg.bank_holder || BANK_V2.titular;
+  var bankClabe    = cfg.bank_clabe  || BANK_V2.clabe;
+  var whatsNumber  = (cfg.whatsapp_number && cfg.whatsapp_number.replace(/\D/g, '')) || WHATS_NUM_V2;
+  var holdMinutes  = parseInt(cfg.hold_minutes, 10) > 0 ? parseInt(cfg.hold_minutes, 10) : 20;
+
   var step      = _uS(0); // 0=date+slot, 1=chosen, 2=data, 3=payment
   var date      = _uS(null);
   var slot      = _uS(null); // { time }
@@ -101,7 +111,7 @@ function BookingV2(props) {
       var booking = await window.lbApi.getBooking(bookingId);
       var expiresAtMs = booking.expires_at
         ? new Date(booking.expires_at).getTime()
-        : Date.now() + 20 * 60 * 1000;
+        : Date.now() + holdMinutes * 60 * 1000;
       confirmed[1]({
         id:            booking.id,
         booking:       booking,
@@ -134,7 +144,8 @@ function BookingV2(props) {
   if (confirmed[0]) {
     var booking = confirmed[0].booking;
     var customerFirstName = (name[0].trim().split(' ')[0] || '').trim();
-    var whatsHref = whatsBookingUrlV(booking.service_option_name, booking.booking_date, booking.start_time, customerFirstName);
+    var whatsHref = 'https://wa.me/' + whatsNumber + '?text=' +
+      encodeURIComponent(buildWhatsMessageV(booking.service_option_name, booking.booking_date, booking.start_time, customerFirstName));
     return (
       <div className="lv-booking" data-screen-label="Confirmación">
         <PageTransition k="confirm">
@@ -142,7 +153,7 @@ function BookingV2(props) {
             <div className="lv-confirm-icon wait">⏳</div>
             <h2>¡Apartamos tu lugar!</h2>
             <p className="lv-confirm-sub">
-              Tu cita quedó apartada por <strong>20 minutos</strong>.<br/>
+              Tu cita quedó apartada por <strong>{holdMinutes} minutos</strong>.<br/>
               Tienes <strong><CountdownV
                 targetMs={confirmed[0].expiresAtMs}
                 onExpire={function() { /* keep showing 0:00 */ }}
@@ -162,9 +173,9 @@ function BookingV2(props) {
             </div>
 
             <div className="lv-bankbox">
-              <div className="lv-bankrow"><em>Banco</em><span>{BANK_V2.banco}</span></div>
-              <div className="lv-bankrow"><em>Titular</em><span>{BANK_V2.titular}</span></div>
-              <div className="lv-bankrow"><em>CLABE</em><span>{BANK_V2.clabe}</span></div>
+              <div className="lv-bankrow"><em>Banco</em><span>{bankName}</span></div>
+              <div className="lv-bankrow"><em>Titular</em><span>{bankHolder}</span></div>
+              <div className="lv-bankrow"><em>CLABE</em><span>{bankClabe}</span></div>
               <div className="lv-bankrow"><em>Anticipo</em><span>{fmtMoneyV(DEPOSIT_V2)}</span></div>
             </div>
 
@@ -281,13 +292,13 @@ function BookingV2(props) {
             {payMethod[0] === 'transfer' && (
               <div className="lv-formcol lv-fadein">
                 <div className="lv-bankbox">
-                  <div className="lv-bankrow"><em>Banco</em><span>{BANK_V2.banco}</span></div>
-                  <div className="lv-bankrow"><em>Titular</em><span>{BANK_V2.titular}</span></div>
-                  <div className="lv-bankrow"><em>CLABE</em><span>{BANK_V2.clabe}</span></div>
+                  <div className="lv-bankrow"><em>Banco</em><span>{bankName}</span></div>
+                  <div className="lv-bankrow"><em>Titular</em><span>{bankHolder}</span></div>
+                  <div className="lv-bankrow"><em>CLABE</em><span>{bankClabe}</span></div>
                   <div className="lv-bankrow"><em>Monto</em><span>{fmtMoneyV(DEPOSIT_V2)}</span></div>
                 </div>
                 <p className="lv-paynote small">
-                  Tu lugar queda apartado por 20 minutos al confirmar. Envía tu comprobante por WhatsApp después.
+                  Tu lugar queda apartado por {holdMinutes} minutos al confirmar. Envía tu comprobante por WhatsApp después.
                 </p>
                 {submitError[0] && <p className="lv-err">{submitError[0]}</p>}
                 {submitError[0] && submitError[0].indexOf('horario') !== -1 && (

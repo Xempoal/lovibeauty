@@ -67,6 +67,22 @@
       );
     },
 
+    async loadBusinessConfig() {
+      // Public key/value config (bank details, WhatsApp, hold window). The table
+      // is RLS-public for SELECT; the admin panel writes it via service_role.
+      // Returns a plain { key: value } map. Never throws — falls back to {} so a
+      // missing table (pre-migration) doesn't break the booking flow.
+      try {
+        const rows = await unwrap(sb.from('business_config').select('key, value'));
+        const map = {};
+        (rows || []).forEach((r) => { map[r.key] = r.value; });
+        return map;
+      } catch (e) {
+        console.warn('[lovibeauty] business_config no disponible aún', e && e.message);
+        return {};
+      }
+    },
+
     async loadBusinessHours() {
       const rows = await unwrap(
         sb.from('business_hours')

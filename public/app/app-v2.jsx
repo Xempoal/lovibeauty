@@ -186,6 +186,7 @@ function AppV() {
   var services      = _uS([]);
   var servicesLoading = _uS(true);
   var businessHours = _uS(null);
+  var businessConfig = _uS(null); // { bank_clabe, bank_name, ... } from Supabase
 
   // Booking flow state.
   var pendingServiceOption = _uS(null); // service_options row
@@ -203,10 +204,12 @@ function AppV() {
     Promise.all([
       window.lbApi.loadServices(),
       window.lbApi.loadBusinessHours(),
+      window.lbApi.loadBusinessConfig(),
     ]).then(function(results) {
       if (cancelled) return;
       services[1](results[0]);
       businessHours[1](results[1]);
+      businessConfig[1](results[2]);
       servicesLoading[1](false);
     }).catch(function(err) {
       if (cancelled) return;
@@ -344,7 +347,7 @@ function AppV() {
                 services={services[0]}
                 loading={servicesLoading[0]}
                 onPick={pickService}
-                onAdminPrompt={function() { authMode[1]('admin'); }}
+                onAdminPrompt={function() { window.location.assign('/admin/'); }}
               />
             )}
             {view[0] === 'booking' && pendingServiceOption[0] && (
@@ -353,6 +356,7 @@ function AppV() {
                 serviceOption={pendingServiceOption[0]}
                 serviceName={pendingServiceName[0]}
                 businessHours={businessHours[0]}
+                businessConfig={businessConfig[0]}
                 toast={toast}
                 onClose={closeBooking}
                 onGoLogin={function() { authMode[1]('login'); }}
@@ -368,7 +372,7 @@ function AppV() {
                 services={services[0]}
                 loading={servicesLoading[0]}
                 onPick={pickService}
-                onAdminPrompt={function() { authMode[1]('admin'); }}
+                onAdminPrompt={function() { window.location.assign('/admin/'); }}
               />
             )}
             {view[0] === 'admin' && isAdmin && (

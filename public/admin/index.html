@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow" />
+<title>LoviBeauty — Panel del estudio</title>
+<link rel="icon" href="../assets/logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --primary: #A4365A;
+    --primary-deep: #7E2342;
+    --bg: #FDF4F0;
+    --bg-warm: #F6E6DB;
+    --gold: #C39A6B;
+    --ink: #2E1A20;
+    --muted: #8A6E73;
+    --line: rgba(164, 54, 90, 0.16);
+    --primary-soft: #F6E2E6;
+    --display: 'Playfair Display', serif;
+    --numeral: 'Fraunces', 'Playfair Display', serif;
+    --body: 'Inter', system-ui, sans-serif;
+    --radius: 20px;
+    --shadow-card: 0 8px 30px -12px rgba(126, 35, 66, 0.18);
+    --ok: #2E7D52;   --ok-bg: #E3F2E9;
+    --warn: #B8860B; --warn-bg: #FBF3DC;
+    --info: #2563A8; --info-bg: #E2ECF8;
+    --gray: #8A8A8A; --gray-bg: #EFEDED;
+    --danger: #B23A2E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: var(--body); background: var(--bg); color: var(--ink);
+    font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+  }
+  button { font-family: inherit; font-size: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  input, select { font-family: inherit; font-size: 16px; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.01em; }
+  .num { font-family: var(--numeral); }
+
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px calc(40px + env(safe-area-inset-bottom, 0)); }
+
+  /* ── login ── */
+  .login { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px; text-align: center; }
+  .login img { width: 64px; height: 64px; border-radius: 18px; box-shadow: var(--shadow-card); }
+  .login h1 { font-size: 30px; color: var(--primary); }
+  .login p { color: var(--muted); font-size: 14px; max-width: 280px; }
+  .pin-input {
+    letter-spacing: 0.5em; text-align: center; font-size: 26px; font-family: var(--numeral);
+    width: 100%; max-width: 260px; padding: 16px 12px; border-radius: 16px;
+    border: 1.5px solid var(--line); background: #fff; color: var(--ink);
+  }
+  .pin-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(164,54,90,0.12); }
+
+  /* ── header ── */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in oklab, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(180%) blur(16px); -webkit-backdrop-filter: saturate(180%) blur(16px);
+    border-bottom: 1px solid var(--line);
+    padding: calc(12px + env(safe-area-inset-top, 0)) 16px 0;
+  }
+  .head-row { max-width: 640px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand img { width: 34px; height: 34px; border-radius: 10px; }
+  .brand strong { font-family: var(--display); font-size: 19px; color: var(--primary); }
+  .brand span { display: block; font-size: 11px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+  .logout { font-size: 13px; color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+
+  .tabs { max-width: 640px; margin: 10px auto 0; display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    padding: 8px 16px; border-radius: 999px; font-size: 13.5px; font-weight: 500; white-space: nowrap;
+    border: 1px solid var(--line); color: var(--muted); background: #fff;
+  }
+  .tab.sel { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 6px 16px -6px rgba(126,35,66,0.45); }
+  .tab .dot { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 6px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 11px; font-family: var(--numeral); }
+
+  main { padding-top: 18px; }
+
+  /* ── day nav ── */
+  .daynav { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .daynav .arrow { width: 40px; height: 40px; border-radius: 12px; background: #fff; border: 1px solid var(--line); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .daynav .arrow:active { transform: scale(0.94); }
+  .daynav .label { flex: 1; text-align: center; }
+  .daynav .label strong { display: block; font-size: 16px; text-transform: capitalize; }
+  .daynav .label span { font-size: 12px; color: var(--muted); }
+  .daynav input[type=date] { position: absolute; opacity: 0; width: 40px; height: 40px; }
+  .today-btn { font-size: 12px; color: var(--primary); border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; }
+
+  /* ── KPIs ── */
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+  .kpi { background: linear-gradient(150deg, #fff, var(--bg-warm)); border: 1px solid var(--line); border-radius: 16px; padding: 14px 8px; text-align: center; box-shadow: var(--shadow-card); }
+  .kpi strong { display: block; font-family: var(--numeral); font-size: 26px; font-weight: 700; color: var(--primary); line-height: 1; }
+  .kpi span { font-size: 11px; color: var(--muted); }
+
+  /* ── cards / lists ── */
+  .sec { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin: 20px 4px 10px; }
+  .list { display: flex; flex-direction: column; gap: 10px; }
+  .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 28px 12px; background: rgba(255,255,255,0.5); border: 1px dashed var(--line); border-radius: var(--radius); }
+  .row {
+    display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+    background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 13px 14px;
+    transition: transform 0.15s, box-shadow 0.2s;
+  }
+  .row:active { transform: scale(0.99); }
+  .row .time { font-family: var(--numeral); font-size: 18px; font-weight: 700; color: var(--primary); min-width: 64px; line-height: 1; }
+  .row .mid { flex: 1; min-width: 0; }
+  .row .mid strong { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .mid span { font-size: 12.5px; color: var(--muted); }
+
+  .badge { font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
+  .b-pending_payment { color: var(--warn); background: var(--warn-bg); }
+  .b-confirmed { color: var(--ok); background: var(--ok-bg); }
+  .b-completed { color: var(--info); background: var(--info-bg); }
+  .b-cancelled, .b-expired { color: var(--gray); background: var(--gray-bg); }
+
+  .alert { background: linear-gradient(135deg, #FBE5E1, #f8d8d2); border: 1px solid #ECC4BC; border-radius: 16px; padding: 12px 14px; font-size: 13.5px; color: #8a3328; margin-bottom: 8px; }
+
+  /* ── buttons ── */
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 18px; border-radius: 14px; font-weight: 600; font-size: 15px; transition: transform 0.12s, box-shadow 0.2s, opacity 0.2s; }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.45; }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-deep)); color: #fff; box-shadow: 0 10px 26px -10px rgba(126,35,66,0.5); }
+  .btn-ok { background: linear-gradient(135deg, #4ED98E, var(--ok)); color: #fff; }
+  .btn-soft { background: var(--primary-soft); color: var(--primary); }
+  .btn-glass { background: #fff; color: var(--primary); border: 1px solid var(--line); }
+  .btn-danger { background: #fff; color: var(--danger); border: 1px solid #e3b3ac; }
+  .btn-whats { background: linear-gradient(135deg, #25D366, #1FA855); color: #fff; }
+  .btn-sm { padding: 9px 14px; font-size: 13.5px; border-radius: 11px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* ── forms ── */
+  .field { display: block; margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin: 0 2px 5px; letter-spacing: 0.02em; }
+  .field input, .field select { width: 100%; padding: 13px 14px; border-radius: 13px; border: 1.5px solid var(--line); background: #fff; color: var(--ink); }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(164,54,90,0.1); }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  .toggle { display: flex; align-items: center; gap: 10px; padding: 4px 2px 12px; font-size: 14px; color: var(--ink); }
+  .toggle input { width: 20px; height: 20px; accent-color: var(--primary); }
+
+  /* ── modal ── */
+  .overlay { position: fixed; inset: 0; z-index: 60; background: rgba(46,26,32,0.5); backdrop-filter: blur(4px); display: flex; align-items: flex-end; justify-content: center; opacity: 0; transition: opacity 0.25s; }
+  .overlay.in { opacity: 1; }
+  .sheet { background: var(--bg); width: 100%; max-width: 640px; max-height: 92dvh; overflow: auto; border-radius: 26px 26px 0 0; padding: 22px 18px calc(28px + env(safe-area-inset-bottom,0)); transform: translateY(30px); transition: transform 0.3s; }
+  .overlay.in .sheet { transform: translateY(0); }
+  @media (min-width: 660px) { .overlay { align-items: center; padding: 20px; } .sheet { border-radius: 24px; } }
+  .sheet-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .sheet-head h3 { font-size: 24px; color: var(--primary); }
+  .x { width: 34px; height: 34px; border-radius: 50%; background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; font-size: 15px; }
+  .kv { display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .kv:last-of-type { border-bottom: none; }
+  .kv em { font-style: normal; color: var(--muted); }
+  .kv span { font-weight: 500; text-align: right; }
+  .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 90; background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 999px; font-size: 13.5px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); max-width: calc(100% - 32px); }
+  .err { color: var(--danger); font-size: 13.5px; padding: 4px 2px; }
+  .loading { text-align: center; color: var(--muted); padding: 30px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function () {
+  "use strict";
+
+  // ─── tiny DOM helpers ───
+  function h(tag, attrs, children) {
+    var el = document.createElement(tag);
+    attrs = attrs || {};
+    for (var k in attrs) {
+      if (k === "class") el.className = attrs[k];
+      else if (k === "html") el.innerHTML = attrs[k];
+      else if (k.slice(0, 2) === "on" && typeof attrs[k] === "function") el.addEventListener(k.slice(2), attrs[k]);
+      else if (attrs[k] != null) el.setAttribute(k, attrs[k]);
+    }
+    (children || []).forEach(function (c) {
+      if (c == null || c === false) return;
+      el.appendChild(typeof c === "string" || typeof c === "number" ? document.createTextNode(String(c)) : c);
+    });
+    return el;
+  }
+  var app = document.getElementById("app");
+  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+  // ─── state ───
+  var TOKEN_KEY = "lb_admin_token", EXP_KEY = "lb_admin_exp";
+  var token = localStorage.getItem(TOKEN_KEY);
+  var tokenExp = parseInt(localStorage.getItem(EXP_KEY) || "0", 10);
+  var tab = "hoy";
+  var selDate = todayStr();
+  var cancelCount = 0;
+
+  function authed() { return token && tokenExp > Date.now(); }
+  function setToken(t, exp) {
+    token = t; tokenExp = exp;
+    localStorage.setItem(TOKEN_KEY, t); localStorage.setItem(EXP_KEY, String(exp));
+  }
+  function logout() {
+    token = null; tokenExp = 0;
+    localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(EXP_KEY);
+    render();
+  }
+
+  // ─── api ───
+  async function api(path, opts) {
+    opts = opts || {};
+    var headers = Object.assign({ "content-type": "application/json" }, opts.headers || {});
+    if (token) headers.Authorization = "Bearer " + token;
+    var res = await fetch("/api/admin" + path, {
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body != null ? JSON.stringify(opts.body) : undefined,
+    });
+    if (res.status === 401) { logout(); throw new Error("Sesión expirada"); }
+    var data = null;
+    var text = await res.text();
+    if (text) { try { data = JSON.parse(text); } catch (e) { data = text; } }
+    if (!res.ok) throw new Error((data && data.error) || ("Error " + res.status));
+    return data;
+  }
+
+  // ─── date / format helpers ───
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function todayStr() { var d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function fromStr(s) { var p = s.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function addDays(s, n) { var d = fromStr(s); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  var DOW = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  var MON = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  function fmtDateLong(s) { var d = fromStr(s); return DOW[d.getDay()] + ", " + d.getDate() + " " + MON[d.getMonth()].slice(0, 3); }
+  function fmtDateShort(s) { var d = fromStr(s); return d.getDate() + " " + MON[d.getMonth()].slice(0, 3); }
+  function fmtTime(t) { if (!t) return ""; var p = t.split(":"); var hh = +p[0]; var ap = hh >= 12 ? "pm" : "am"; hh = hh % 12 || 12; return hh + ":" + p[1] + " " + ap; }
+  function money(n) { if (n == null) return "—"; return "$" + Number(n).toLocaleString("es-MX"); }
+  var STATUS_LABEL = {
+    pending_payment: "Pendiente de pago", confirmed: "Confirmada",
+    completed: "Completada", cancelled: "Cancelada", expired: "Expirada",
+  };
+
+  // ─── toast ───
+  var toastTimer = null;
+  function toast(msg) {
+    var existing = document.querySelector(".toast");
+    if (existing) existing.remove();
+    var el = h("div", { class: "toast" }, [msg]);
+    document.body.appendChild(el);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.remove(); }, 2600);
+  }
+
+  // ─── modal ───
+  function modal(title, bodyNodes) {
+    var overlay = h("div", { class: "overlay", onclick: function (e) { if (e.target === overlay) close(); } });
+    var sheet = h("div", { class: "sheet" }, [
+      h("div", { class: "sheet-head" }, [
+        h("h3", {}, [title]),
+        h("button", { class: "x", onclick: function () { close(); } }, ["✕"]),
+      ]),
+    ]);
+    bodyNodes.forEach(function (n) { sheet.appendChild(n); });
+    overlay.appendChild(sheet);
+    document.body.appendChild(overlay);
+    requestAnimationFrame(function () { overlay.classList.add("in"); });
+    function close() { overlay.classList.remove("in"); setTimeout(function () { overlay.remove(); }, 250); }
+    return close;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  LOGIN
+  // ══════════════════════════════════════════════════════════════
+  function renderLogin() {
+    clear(app);
+    var input = h("input", { class: "pin-input", type: "tel", inputmode: "numeric", maxlength: "8", placeholder: "••••••", autocomplete: "off" });
+    var err = h("div", { class: "err", style: "min-height:18px" }, [""]);
+    var btn = h("button", { class: "btn btn-primary", style: "max-width:260px" }, ["Entrar al panel"]);
+
+    async function submit() {
+      var pin = input.value.trim();
+      if (!/^\d{4,8}$/.test(pin)) { err.textContent = "Ingresa tu PIN."; return; }
+      btn.disabled = true; btn.textContent = "Entrando…"; err.textContent = "";
+      try {
+        var data = await api("/login", { method: "POST", body: { pin: pin } });
+        setToken(data.token, data.expiresAt);
+        render();
+      } catch (e) {
+        err.textContent = e.message || "PIN incorrecto";
+        btn.disabled = false; btn.textContent = "Entrar al panel";
+        input.value = ""; input.focus();
+      }
+    }
+    btn.addEventListener("click", submit);
+    input.addEventListener("keydown", function (e) { if (e.key === "Enter") submit(); });
+
+    var box = h("div", { class: "login" }, [
+      h("img", { src: "../assets/logo.png", alt: "" }),
+      h("h1", {}, ["Panel del estudio"]),
+      h("p", {}, ["Ingresa tu PIN para administrar las citas de LoviBeauty."]),
+      input, err, btn,
+    ]);
+    app.appendChild(box);
+    setTimeout(function () { input.focus(); }, 100);
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  SHELL
+  // ══════════════════════════════════════════════════════════════
+  function renderShell() {
+    clear(app);
+    var tabsDef = [["hoy", "Hoy"], ["cancelaciones", "Cancelaciones"], ["bloqueos", "Bloqueos"], ["config", "Configuración"]];
+    var tabBar = h("div", { class: "tabs" }, tabsDef.map(function (t) {
+      var children = [t[1]];
+      if (t[0] === "cancelaciones" && cancelCount > 0) children.push(h("span", { class: "dot" }, [String(cancelCount)]));
+      return h("button", { class: "tab" + (tab === t[0] ? " sel" : ""), onclick: function () { tab = t[0]; render(); } }, children);
+    }));
+
+    var header = h("header", {}, [
+      h("div", { class: "head-row" }, [
+        h("div", { class: "brand" }, [
+          h("img", { src: "../assets/logo.png", alt: "" }),
+          h("div", {}, [h("strong", {}, ["LoviBeauty"]), h("span", {}, ["Panel del estudio"])]),
+        ]),
+        h("button", { class: "logout", onclick: logout }, ["Salir"]),
+      ]),
+      tabBar,
+    ]);
+
+    var main = h("main", {}, []);
+    var wrap = h("div", { class: "wrap" }, [main]);
+    app.appendChild(header);
+    app.appendChild(wrap);
+
+    if (tab === "hoy") renderHoy(main);
+    else if (tab === "cancelaciones") renderCancelaciones(main);
+    else if (tab === "bloqueos") renderBloqueos(main);
+    else if (tab === "config") renderConfig(main);
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  TAB: HOY
+  // ══════════════════════════════════════════════════════════════
+  async function renderHoy(main) {
+    clear(main);
+
+    var dateInput = h("input", { type: "date", value: selDate, onchange: function (e) { selDate = e.target.value || selDate; renderHoy(main); } });
+    var nav = h("div", { class: "daynav" }, [
+      h("button", { class: "arrow", onclick: function () { selDate = addDays(selDate, -1); renderHoy(main); } }, ["‹"]),
+      h("label", { class: "label", style: "position:relative" }, [
+        h("strong", {}, [fmtDateLong(selDate)]),
+        h("span", {}, [selDate === todayStr() ? "Hoy" : "Toca para elegir fecha"]),
+        dateInput,
+      ]),
+      h("button", { class: "arrow", onclick: function () { selDate = addDays(selDate, 1); renderHoy(main); } }, ["›"]),
+    ]);
+    main.appendChild(nav);
+    if (selDate !== todayStr()) {
+      main.appendChild(h("div", { style: "text-align:center;margin:-6px 0 14px" }, [
+        h("button", { class: "today-btn", onclick: function () { selDate = todayStr(); renderHoy(main); } }, ["↺ Volver a hoy"]),
+      ]));
+    }
+
+    var loading = h("div", { class: "loading" }, ["Cargando citas…"]);
+    main.appendChild(loading);
+
+    var res;
+    try { res = await api("/bookings?date=" + selDate); }
+    catch (e) { loading.className = "err"; loading.textContent = e.message; return; }
+    loading.remove();
+
+    var bookings = res.bookings || [];
+    var active = bookings.filter(function (b) { return b.status !== "cancelled" && b.status !== "expired"; });
+    var pending = bookings.filter(function (b) { return b.status === "pending_payment"; });
+    var total = active.reduce(function (a, b) { return a + (b.price || 0); }, 0);
+
+    main.appendChild(h("div", { class: "kpis" }, [
+      h("div", { class: "kpi" }, [h("strong", {}, [String(active.length)]), h("span", {}, ["citas"])]),
+      h("div", { class: "kpi" }, [h("strong", {}, [String(pending.length)]), h("span", {}, ["por confirmar"])]),
+      h("div", { class: "kpi" }, [h("strong", {}, [money(total)]), h("span", {}, ["total del día"])]),
+    ]));
+
+    main.appendChild(h("div", { class: "sec" }, ["Agenda"]));
+    if (bookings.length === 0) {
+      main.appendChild(h("div", { class: "empty" }, ["Sin citas este día."]));
+      return;
+    }
+    var list = h("div", { class: "list" }, bookings.map(function (b) {
+      return h("button", { class: "row", onclick: function () { openBooking(b, main); } }, [
+        h("span", { class: "time" }, [fmtTime(b.start_time)]),
+        h("div", { class: "mid" }, [
+          h("strong", {}, [b.customer_name]),
+          h("span", {}, [(b.option_name || b.service_name || "Servicio") + " · " + b.phone]),
+        ]),
+        h("span", { class: "badge b-" + b.status }, [STATUS_LABEL[b.status] || b.status]),
+      ]);
+    }));
+    main.appendChild(list);
+  }
+
+  function waLink(phone, text) {
+    var digits = (phone || "").replace(/\D/g, "");
+    if (digits.length === 10) digits = "52" + digits;
+    return "https://wa.me/" + digits + (text ? "?text=" + encodeURIComponent(text) : "");
+  }
+
+  function openBooking(b, main) {
+    var rows = [
+      ["Clienta", b.customer_name],
+      ["Teléfono", b.phone || "—"],
+      ["Correo", b.email || "—"],
+      ["Servicio", (b.option_name || "—") + (b.service_name ? " (" + b.service_name + ")" : "")],
+      ["Fecha", fmtDateLong(b.date)],
+      ["Hora", fmtTime(b.start_time) + " – " + fmtTime(b.end_time)],
+      ["Precio", money(b.price)],
+      ["Pago", b.payment_method + " · " + (b.payment_status === "paid" ? "pagado" : "pendiente")],
+      ["Estado", STATUS_LABEL[b.status] || b.status],
+    ];
+    if (b.notes) rows.push(["Notas", b.notes]);
+
+    var body = rows.map(function (r) { return h("div", { class: "kv" }, [h("em", {}, [r[0]]), h("span", {}, [r[1]])]); });
+
+    var actions = h("div", { class: "actions" }, []);
+    var close;
+
+    async function doPatch(patch, msg) {
+      try { await api("/bookings/" + b.id, { method: "PATCH", body: patch }); toast(msg); close(); renderHoy(main); }
+      catch (e) { toast(e.message); }
+    }
+
+    if (b.phone) {
+      actions.appendChild(h("a", { class: "btn btn-whats", href: waLink(b.phone, "Hola " + b.customer_name + " 💕, te escribo de LoviBeauty sobre tu cita."), target: "_blank", rel: "noopener" }, ["WhatsApp a la clienta"]));
+    }
+    if (b.status === "pending_payment") {
+      actions.appendChild(h("button", { class: "btn btn-ok", onclick: function () { doPatch({ status: "confirmed", payment_status: "paid" }, "Pago confirmado ✓"); } }, ["Confirmar pago"]));
+    }
+    if (b.status === "confirmed") {
+      actions.appendChild(h("button", { class: "btn btn-primary", onclick: function () { doPatch({ status: "completed" }, "Cita completada ✓"); } }, ["Marcar como completada"]));
+    }
+    if (b.status === "pending_payment" || b.status === "confirmed") {
+      actions.appendChild(h("button", { class: "btn btn-danger", onclick: function () { doPatch({ status: "cancelled" }, "Cita cancelada"); } }, ["Cancelar cita"]));
+    }
+
+    body.push(actions);
+    close = modal("Cita", body);
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  TAB: CANCELACIONES
+  // ══════════════════════════════════════════════════════════════
+  async function renderCancelaciones(main) {
+    clear(main);
+    main.appendChild(h("div", { class: "sec" }, ["Solicitudes pendientes"]));
+    var loading = h("div", { class: "loading" }, ["Cargando…"]);
+    main.appendChild(loading);
+
+    var res;
+    try { res = await api("/cancellations"); }
+    catch (e) { loading.className = "err"; loading.textContent = e.message; return; }
+    loading.remove();
+
+    var reqs = res.requests || [];
+    cancelCount = reqs.length;
+    // refresh the tab badge
+    var badgeTab = document.querySelectorAll(".tab")[1];
+    if (badgeTab) renderShellBadge();
+
+    if (reqs.length === 0) { main.appendChild(h("div", { class: "empty" }, ["No hay solicitudes de cancelación."])); return; }
+
+    var list = h("div", { class: "list" }, reqs.map(function (r) {
+      var card = h("div", { class: "card" }, [
+        h("div", { style: "display:flex;justify-content:space-between;gap:10px;align-items:flex-start" }, [
+          h("div", {}, [
+            h("strong", { style: "font-size:15px" }, [r.customer_name]),
+            h("div", { style: "font-size:12.5px;color:var(--muted)" }, [(r.service_name || "Servicio") + " · " + fmtDateShort(r.date) + " " + fmtTime(r.start_time)]),
+          ]),
+          h("span", { class: "badge b-" + (r.booking_status || "pending_payment") }, [STATUS_LABEL[r.booking_status] || ""]),
+        ]),
+        r.reason ? h("p", { style: "font-size:13.5px;color:var(--muted);margin:8px 0 0" }, ["“" + r.reason + "”"]) : null,
+        h("div", { class: "row2", style: "margin-top:12px" }, [
+          h("button", { class: "btn btn-danger btn-sm" }, ["Aprobar cancelación"]),
+          h("button", { class: "btn btn-glass btn-sm" }, ["Rechazar"]),
+        ]),
+      ]);
+      var btns = card.querySelectorAll("button.btn");
+      btns[0].addEventListener("click", function () { resolveCancel(r.id, "approve", main); });
+      btns[1].addEventListener("click", function () { resolveCancel(r.id, "reject", main); });
+      return card;
+    }));
+    main.appendChild(list);
+  }
+
+  async function resolveCancel(id, action, main) {
+    try {
+      await api("/cancellations/" + id, { method: "PATCH", body: { action: action } });
+      toast(action === "approve" ? "Cancelación aprobada" : "Solicitud rechazada");
+      renderCancelaciones(main);
+    } catch (e) { toast(e.message); }
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  TAB: BLOQUEOS
+  // ══════════════════════════════════════════════════════════════
+  async function renderBloqueos(main) {
+    clear(main);
+
+    var dateF = h("input", { type: "date", value: todayStr(), min: todayStr() });
+    var fullDay = h("input", { type: "checkbox" });
+    var startF = h("input", { type: "time", value: "14:00", step: "1800" });
+    var endF = h("input", { type: "time", value: "15:00", step: "1800" });
+    var reasonF = h("input", { type: "text", placeholder: "Vacaciones, cita personal…" });
+    var hoursWrap = h("div", { class: "row2" }, [
+      h("label", { class: "field" }, [h("label", {}, ["Desde"]), startF]),
+      h("label", { class: "field" }, [h("label", {}, ["Hasta"]), endF]),
+    ]);
+    fullDay.addEventListener("change", function () { hoursWrap.style.display = fullDay.checked ? "none" : "grid"; });
+
+    var saveBtn = h("button", { class: "btn btn-primary" }, ["Bloquear"]);
+    var err = h("div", { class: "err", style: "min-height:0" }, []);
+
+    saveBtn.addEventListener("click", async function () {
+      err.textContent = "";
+      var body = { blocked_date: dateF.value, reason: reasonF.value.trim() };
+      if (!fullDay.checked) { body.start_time = startF.value; body.end_time = endF.value; }
+      if (!body.blocked_date) { err.textContent = "Elige una fecha."; return; }
+      if (!fullDay.checked && body.end_time <= body.start_time) { err.textContent = "La hora de fin debe ser mayor."; return; }
+      saveBtn.disabled = true; saveBtn.textContent = "Guardando…";
+      try {
+        await api("/blocked-slots", { method: "POST", body: body });
+        reasonF.value = ""; toast("Horario bloqueado");
+        renderBloqueos(main);
+      } catch (e) { err.textContent = e.message; saveBtn.disabled = false; saveBtn.textContent = "Bloquear"; }
+    });
+
+    main.appendChild(h("div", { class: "sec" }, ["Bloquear fecha u horario"]));
+    main.appendChild(h("div", { class: "card" }, [
+      h("label", { class: "field" }, [h("label", {}, ["Fecha"]), dateF]),
+      h("label", { class: "toggle" }, [fullDay, "Bloquear el día completo"]),
+      hoursWrap,
+      h("label", { class: "field" }, [h("label", {}, ["Motivo"]), reasonF]),
+      err, saveBtn,
+    ]));
+
+    main.appendChild(h("div", { class: "sec" }, ["Próximos bloqueos"]));
+    var loading = h("div", { class: "loading" }, ["Cargando…"]);
+    main.appendChild(loading);
+
+    var res;
+    try { res = await api("/blocked-slots"); }
+    catch (e) { loading.className = "err"; loading.textContent = e.message; return; }
+    loading.remove();
+
+    var blocks = res.blocks || [];
+    if (blocks.length === 0) { main.appendChild(h("div", { class: "empty" }, ["Sin bloqueos próximos."])); return; }
+    var list = h("div", { class: "list" }, blocks.map(function (b) {
+      var when = b.full_day ? "Día completo" : (fmtTime(b.start_time) + " – " + fmtTime(b.end_time));
+      var del = h("button", { class: "btn btn-danger btn-sm", style: "width:auto" }, ["Quitar"]);
+      del.addEventListener("click", async function () {
+        try { await api("/blocked-slots?id=" + b.id, { method: "DELETE" }); toast("Bloqueo eliminado"); renderBloqueos(main); }
+        catch (e) { toast(e.message); }
+      });
+      return h("div", { class: "row" }, [
+        h("div", { class: "mid" }, [
+          h("strong", {}, [fmtDateShort(b.blocked_date) + " · " + when]),
+          h("span", {}, [b.reason || "Bloqueado"]),
+        ]),
+        del,
+      ]);
+    }));
+    main.appendChild(list);
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  TAB: CONFIG
+  // ══════════════════════════════════════════════════════════════
+  async function renderConfig(main) {
+    clear(main);
+    var loading = h("div", { class: "loading" }, ["Cargando configuración…"]);
+    main.appendChild(loading);
+
+    var res;
+    try { res = await api("/config"); }
+    catch (e) { loading.className = "err"; loading.textContent = e.message; return; }
+    loading.remove();
+    var c = res.config || {};
+
+    function field(label, key, attrs) {
+      var input = h("input", Object.assign({ type: "text", value: c[key] != null ? c[key] : "" }, attrs || {}));
+      input.dataset.key = key;
+      return { node: h("label", { class: "field" }, [h("label", {}, [label]), input]), input: input };
+    }
+
+    var fName = field("Banco", "bank_name", { placeholder: "BBVA" });
+    var fHolder = field("Titular de la cuenta", "bank_holder", { placeholder: "LoviBeauty Studio" });
+    var fClabe = field("CLABE interbancaria", "bank_clabe", { inputmode: "numeric", placeholder: "18 dígitos" });
+    var fWhats = field("WhatsApp (para comprobantes)", "whatsapp_number", { inputmode: "tel", placeholder: "5215512345678" });
+    var fHold = field("Tiempo de apartado (minutos)", "hold_minutes", { type: "number", min: "1", max: "1440" });
+
+    var saveBtn = h("button", { class: "btn btn-primary" }, ["Guardar cambios"]);
+    var err = h("div", { class: "err" }, []);
+
+    saveBtn.addEventListener("click", async function () {
+      err.textContent = "";
+      var body = {
+        bank_name: fName.input.value.trim(),
+        bank_holder: fHolder.input.value.trim(),
+        bank_clabe: fClabe.input.value.trim(),
+        whatsapp_number: fWhats.input.value.replace(/\D/g, ""),
+        hold_minutes: fHold.input.value.trim(),
+      };
+      saveBtn.disabled = true; saveBtn.textContent = "Guardando…";
+      try { await api("/config", { method: "PUT", body: body }); toast("Configuración guardada ✓"); }
+      catch (e) { err.textContent = e.message; }
+      finally { saveBtn.disabled = false; saveBtn.textContent = "Guardar cambios"; }
+    });
+
+    main.appendChild(h("div", { class: "sec" }, ["Datos bancarios para transferencia"]));
+    main.appendChild(h("div", { class: "card" }, [fName.node, fHolder.node, fClabe.node]));
+    main.appendChild(h("div", { class: "sec" }, ["Contacto y reservas"]));
+    main.appendChild(h("div", { class: "card" }, [fWhats.node, fHold.node]));
+    main.appendChild(h("div", { style: "margin-top:16px" }, [err, saveBtn]));
+    main.appendChild(h("p", { style: "font-size:12.5px;color:var(--muted);text-align:center;margin-top:14px" }, ["Estos datos se muestran a las clientas al pagar."]));
+  }
+
+  // keep the cancelaciones badge in sync after a fetch
+  function renderShellBadge() {
+    var tabsDef = document.querySelectorAll(".tabs .tab");
+    if (tabsDef[1]) {
+      var existing = tabsDef[1].querySelector(".dot");
+      if (existing) existing.remove();
+      if (cancelCount > 0) tabsDef[1].appendChild(h("span", { class: "dot" }, [String(cancelCount)]));
+    }
+  }
+
+  // Prefetch the cancellation count once after login so the badge shows on Hoy.
+  async function prefetchCounts() {
+    try { var res = await api("/cancellations"); cancelCount = (res.requests || []).length; renderShellBadge(); }
+    catch (e) { /* ignore */ }
+  }
+
+  // ─── root render ───
+  function render() {
+    if (!authed()) { renderLogin(); return; }
+    renderShell();
+    if (tab !== "cancelaciones") prefetchCounts();
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
