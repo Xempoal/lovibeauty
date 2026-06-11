@@ -33,8 +33,15 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create type public.payment_method as enum ('transfer', 'card');
+  create type public.payment_method as enum
+    ('transfer', 'card', 'mercadopago', 'stripe');
 exception when duplicate_object then null; end $$;
+
+-- If the enum already existed (e.g. you ran an earlier version of this file),
+-- make sure the gateway values are present. `add value if not exists` is a
+-- no-op when the label is already there.
+alter type public.payment_method add value if not exists 'mercadopago';
+alter type public.payment_method add value if not exists 'stripe';
 
 do $$ begin
   create type public.payment_status as enum ('pending', 'paid');
@@ -133,6 +140,10 @@ create table if not exists public.bookings (
   status              public.booking_status not null default 'pending_payment',
   payment_method      public.payment_method not null default 'transfer',
   payment_status      public.payment_status not null default 'pending',
+  -- Gateway integration (Mercado Pago / Stripe). Both NULL until the payment
+  -- lands; admin can also fill them in by hand when confirming a transfer.
+  payment_reference   text,
+  payment_amount      numeric(10,2) check (payment_amount is null or payment_amount >= 0),
   held_at             timestamptz not null default now(),
   admin_confirmed_at  timestamptz,
   guest_name          text,
@@ -143,11 +154,24 @@ create table if not exists public.bookings (
   constraint bookings_end_after_start check (end_time > start_time),
   constraint bookings_contact_present check (customer_id is not null or guest_email is not null)
 );
+-- Safety in case the table was created by an older revision without the
+-- gateway columns. No-op on a fresh database.
+alter table public.bookings
+  add column if not exists payment_reference text,
+  add column if not exists payment_amount    numeric(10,2);
+do $$ begin
+  alter table public.bookings
+    add constraint bookings_payment_amount_nonneg
+    check (payment_amount is null or payment_amount >= 0);
+exception when duplicate_object then null; end $$;
+
 create index if not exists bookings_slot_idx        on public.bookings(booking_date, start_time);
 create index if not exists bookings_customer_idx    on public.bookings(customer_id);
 create index if not exists bookings_status_idx      on public.bookings(status);
 create index if not exists bookings_pending_held_idx
   on public.bookings(held_at) where status = 'pending_payment';
+create index if not exists bookings_payment_ref_idx
+  on public.bookings(payment_reference) where payment_reference is not null;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 7. cancellation_requests
@@ -417,6 +441,8 @@ returns table (
   status              public.booking_status,
   payment_method      public.payment_method,
   payment_status      public.payment_status,
+  payment_reference   text,
+  payment_amount      numeric,
   held_at             timestamptz,
   expires_at          timestamptz,
   admin_confirmed_at  timestamptz,
@@ -439,6 +465,7 @@ as $$
          b.booking_date, b.start_time, b.end_time,
          so.duration_minutes, so.price,
          b.status, b.payment_method, b.payment_status,
+         b.payment_reference, b.payment_amount,
          b.held_at,
          b.held_at + public.hold_window() as expires_at,
          b.admin_confirmed_at,
