@@ -196,6 +196,23 @@
       return row || null;
     },
 
+    // Private password recovery: the studio hands the client a temporary
+    // 6-digit code and she sets her new password here. Returns true when the
+    // code was valid (single-use, 15 min TTL), false otherwise.
+    async resetPassword(email, code, newPassword) {
+      const { data, error } = await sb.rpc('reset_password_with_code', {
+        p_email: email,
+        p_code: code,
+        p_new_password: newPassword,
+      });
+      if (error) {
+        const e = new Error(error.message);
+        e.code = error.code;
+        throw e;
+      }
+      return data === true;
+    },
+
     // Loyalty card for a registered user. Upserts the customer by email and
     // returns { card_code, visits, total_visits } (creates the card on first use).
     async getLoyaltyCard(email, fullName, phone) {

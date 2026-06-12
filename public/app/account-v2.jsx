@@ -8,24 +8,44 @@
 // conecta con el cliente en Supabase.
 
 function AuthScreenV(props) {
-  var mode = _uS(props.mode || 'login');
+  var mode = _uS(props.mode || 'login'); // login | register | reset
   var name = _uS(''), phone = _uS(''), email = _uS(''), pass = _uS('');
+  var code = _uS('');
   var err = _uS('');
+  var ok = _uS('');
   var busy = _uS(false);
+
+  function switchMode(m) { mode[1](m); err[1](''); ok[1](''); pass[1](''); code[1](''); }
 
   // onLogin / onRegister hablan con Supabase y devuelven una promesa que
   // resuelve a un mensaje de error (string) o null si todo salió bien.
   function submit(e) {
     e.preventDefault();
     if (busy[0]) return;
-    err[1]('');
+    err[1](''); ok[1]('');
     var p;
     if (mode[0] === 'login') {
       p = props.onLogin(email[0].trim().toLowerCase(), pass[0]);
-    } else {
+    } else if (mode[0] === 'register') {
       if (!name[0].trim() || phone[0].trim().length < 8) { err[1]('Completa tu nombre y teléfono'); return; }
       if (pass[0].length < 6) { err[1]('La contraseña debe tener al menos 6 caracteres'); return; }
       p = props.onRegister({ name: name[0].trim(), phone: phone[0].trim(), email: email[0].trim().toLowerCase(), password: pass[0] });
+    } else {
+      // reset: la clienta escribe el código que le dio el estudio + su
+      // contraseña NUEVA. Nadie del estudio ve la contraseña.
+      if (code[0].trim().length !== 6) { err[1]('El código tiene 6 dígitos. Pídelo en el estudio.'); return; }
+      if (pass[0].length < 6) { err[1]('Tu contraseña nueva debe tener al menos 6 caracteres'); return; }
+      p = window.lbApi.resetPassword(email[0].trim().toLowerCase(), code[0].trim(), pass[0])
+        .then(function(valid) {
+          if (!valid) return 'Código incorrecto o vencido. Pide uno nuevo en el estudio.';
+          switchMode('login');
+          ok[1]('¡Listo! Tu contraseña se actualizó. Inicia sesión con la nueva.');
+          return null;
+        })
+        .catch(function(e2) {
+          console.error('[auth] reset', e2);
+          return 'No pudimos actualizar tu contraseña. Intenta de nuevo.';
+        });
     }
     busy[1](true);
     Promise.resolve(p)
@@ -33,18 +53,34 @@ function AuthScreenV(props) {
       .finally(function() { busy[1](false); });
   }
 
+  var titles = { login: 'Iniciar sesión', register: 'Crear cuenta', reset: 'Recuperar contraseña' };
+  var btnLabels = { login: 'Entrar', register: 'Crear mi cuenta', reset: 'Guardar contraseña nueva' };
+  var busyLabels = { login: 'Entrando…', register: 'Creando…', reset: 'Guardando…' };
+
   return (
-    <SheetV title={mode[0] === 'login' ? 'Iniciar sesión' : 'Crear cuenta'} onClose={props.onClose}>
-      <form className="lv-formcol" onSubmit={submit} data-screen-label={mode[0] === 'login' ? 'Login' : 'Registro'}>
+    <SheetV title={titles[mode[0]]} onClose={props.onClose}>
+      <form className="lv-formcol" onSubmit={submit} data-screen-label={titles[mode[0]]}>
+        {mode[0] === 'reset' && (
+          <p className="lv-paynote" style={{ textAlign: 'left', margin: 0 }}>
+            Pide tu <strong>código de recuperación</strong> en el estudio (te dan 6 dígitos que duran 15 minutos) y crea aquí tu contraseña nueva.
+          </p>
+        )}
         {mode[0] === 'register' && <FieldV label="Nombre completo" value={name[0]} onChange={name[1]} placeholder="Tu nombre" autoFocus={true} />}
         {mode[0] === 'register' && <FieldV label="WhatsApp" value={phone[0]} onChange={phone[1]} placeholder="55 0000 0000" inputMode="tel" />}
         <FieldV label="Correo electrónico" type="email" value={email[0]} onChange={email[1]} placeholder="tu@correo.com" autoFocus={mode[0] === 'login'} />
-        <FieldV label="Contraseña" type="password" value={pass[0]} onChange={pass[1]} placeholder="••••••" />
+        {mode[0] === 'reset' && <FieldV label="Código del estudio" value={code[0]} onChange={code[1]} placeholder="123456" inputMode="numeric" />}
+        <FieldV label={mode[0] === 'reset' ? 'Contraseña nueva' : 'Contraseña'} type="password" value={pass[0]} onChange={pass[1]} placeholder="••••••" />
         {err[0] && <p className="lv-err">{err[0]}</p>}
+        {ok[0] && <p className="lv-note">{ok[0]}</p>}
         <GlassBtn full type="submit" disabled={busy[0]}>
-          {busy[0] ? (mode[0] === 'login' ? 'Entrando…' : 'Creando…') : (mode[0] === 'login' ? 'Entrar' : 'Crear mi cuenta')}
+          {busy[0] ? busyLabels[mode[0]] : btnLabels[mode[0]]}
         </GlassBtn>
-        <button type="button" className="lv-linkbtn" onClick={function() { mode[1](mode[0] === 'login' ? 'register' : 'login'); err[1](''); }}>
+        {mode[0] === 'login' && (
+          <button type="button" className="lv-linkbtn" onClick={function() { switchMode('reset'); }}>
+            ¿Olvidaste tu contraseña?
+          </button>
+        )}
+        <button type="button" className="lv-linkbtn" onClick={function() { switchMode(mode[0] === 'login' ? 'register' : 'login'); }}>
           {mode[0] === 'login' ? '¿No tienes cuenta? Créala aquí' : '¿Ya tienes cuenta? Inicia sesión'}
         </button>
       </form>

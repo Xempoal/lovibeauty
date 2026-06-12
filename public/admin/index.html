@@ -880,18 +880,41 @@
         if (c.loyalty_visits != null) metaBits.push("Sellos " + c.loyalty_visits + "/8");
 
         var acts = h("div", { class: "cat-acts" }, []);
+        var resetBox = h("div", {}, []);
         if (c.phone) {
           acts.appendChild(h("a", { class: "mini", href: waLink(c.phone, ""), target: "_blank", rel: "noopener" }, ["WhatsApp"]));
         }
         if (c.registered) {
-          // Recuperación: muestra la contraseña solo al tocar el botón.
-          var passBtn = h("button", { class: "mini" }, ["Ver contraseña"]);
-          var shown = false;
-          passBtn.addEventListener("click", function () {
-            shown = !shown;
-            passBtn.textContent = shown ? ("🔑 " + c.password) : "Ver contraseña";
+          // Recuperación privada: genera un código temporal de 6 dígitos.
+          // La clienta lo usa en "¿Olvidaste tu contraseña?" para crear una
+          // contraseña nueva ella misma — aquí nunca se ve ninguna contraseña.
+          var resetBtn = h("button", { class: "mini" }, ["Código para recuperar contraseña"]);
+          resetBtn.addEventListener("click", async function () {
+            resetBtn.disabled = true; resetBtn.textContent = "Generando…";
+            try {
+              var res = await api("/customers/" + c.id + "/reset-code", { method: "POST" });
+              resetBtn.textContent = "Generar otro código";
+              clear(resetBox);
+              var waMsg = "Hola " + (c.full_name || "").split(" ")[0] + " 💕 Tu código para recuperar tu contraseña en LoviBeauty es: " +
+                res.code + " (vence en 15 minutos). En la página entra a Iniciar sesión → ¿Olvidaste tu contraseña? y escribe el código con tu contraseña nueva.";
+              resetBox.appendChild(h("div", { class: "loy-cycle", style: "margin-top:10px" }, [
+                h("div", {}, [
+                  "Código: ", h("strong", { style: "font-family:var(--numeral);font-size:18px;letter-spacing:0.2em" }, [res.code]),
+                  " · vence en 15 min",
+                ]),
+                h("div", { style: "font-size:12px;margin-top:4px" }, [
+                  "Dáselo a la clienta: ella crea su contraseña nueva en “¿Olvidaste tu contraseña?”. Aquí nadie ve su contraseña.",
+                ]),
+                c.phone ? h("a", { class: "mini", style: "display:inline-block;margin-top:8px", href: waLink(c.phone, waMsg), target: "_blank", rel: "noopener" }, ["Enviar código por WhatsApp"]) : null,
+              ]));
+            } catch (e) {
+              resetBtn.textContent = "Código para recuperar contraseña";
+              toast(e.message);
+            } finally {
+              resetBtn.disabled = false;
+            }
           });
-          acts.appendChild(passBtn);
+          acts.appendChild(resetBtn);
         }
 
         return h("div", { class: "cat-item", style: "flex-direction:column;align-items:stretch" }, [
@@ -903,6 +926,7 @@
             h("span", { class: "badge " + (c.registered ? "b-confirmed" : "badge-off") }, [c.registered ? "Con cuenta" : "Invitada"]),
           ]),
           acts,
+          resetBox,
         ]);
       }));
       listWrap.appendChild(list);

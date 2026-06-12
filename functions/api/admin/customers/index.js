@@ -1,13 +1,14 @@
 // GET /api/admin/customers  →  every customer, registered accounts first
 //
-// Accessible to both roles (admin and staff) — the studio uses it to look up a
-// client's data and recover her password when she forgets it. Includes the
-// loyalty card (visits) when the client has one.
+// Accessible to both roles (admin and staff). Passwords live in the RLS-locked
+// customer_credentials table and are NEVER returned here — recovery happens via
+// POST /api/admin/customers/:id/reset-code, which hands the studio a temporary
+// code so the client sets a new password herself.
 
 import { json, serverError, requireAuth, sb } from '../_lib.js';
 
 const SELECT =
-  'id,full_name,email,phone,password,registered_at,created_at,' +
+  'id,full_name,email,phone,registered_at,created_at,' +
   'loyalty_cards(card_code,visits,total_visits)';
 
 export async function onRequestGet({ request, env }) {
@@ -26,8 +27,7 @@ export async function onRequestGet({ request, env }) {
         full_name: c.full_name,
         email: c.email,
         phone: c.phone,
-        password: c.password,
-        registered: !!c.password,
+        registered: !!c.registered_at,
         registered_at: c.registered_at,
         created_at: c.created_at,
         loyalty_visits: card ? card.visits : null,
