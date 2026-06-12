@@ -296,15 +296,7 @@ function MyAppointmentsV(props) {
                   </div>
                 ) : (
                   <div className="lv-row2">
-                    <GlassBtn kind="glass" small
-                      href={'https://calendar.google.com/calendar/render?' + new URLSearchParams({
-                        action: 'TEMPLATE',
-                        text: 'LoviBeauty — ' + b.service_option_name,
-                        dates: b.booking_date.replace(/-/g, '') + 'T' + time.replace(':', '') + '00/' +
-                               b.booking_date.replace(/-/g, '') + 'T' + (b.end_time || time).slice(0, 5).replace(':', '') + '00',
-                        details: 'Cita en LoviBeauty Studio.', location: 'LoviBeauty Studio',
-                      }).toString()}
-                      target="_blank">+ Calendario</GlassBtn>
+                    <AddToCalendarBtnV booking={b} small>+ Calendario</AddToCalendarBtnV>
                     <GlassBtn kind="ghostdanger" small onClick={function() { confirmId[1](b.id); }}>Cancelar</GlassBtn>
                   </div>
                 )

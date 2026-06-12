@@ -255,6 +255,23 @@ function ApptCardV(props) {
   );
 }
 
+// Botón "agregar a calendario" según el dispositivo: iPhone/iPad descarga un
+// .ics (Calendario de Apple); Android y desktop abren Google Calendar.
+function AddToCalendarBtnV(props) {
+  var b = props.booking;
+  var label = props.children || '+ Calendario';
+  if (isIOSDeviceV()) {
+    return React.createElement(GlassBtn, {
+      kind: props.kind || 'glass', small: props.small, full: props.full,
+      onClick: function() { downloadBookingICSV(b); }
+    }, label);
+  }
+  return React.createElement(GlassBtn, {
+    kind: props.kind || 'glass', small: props.small, full: props.full,
+    href: googleCalUrlForBookingV(b), target: '_blank'
+  }, label);
+}
+
 function ToastV(props) {
   if (!props.msg) return null;
   return React.createElement('div', { className: 'lv-toast', key: props.msg.id }, props.msg.text);
@@ -282,5 +299,5 @@ function CountdownV(props) {
 
 Object.assign(window, {
   useReveal, PageTransition, BadgeV, AvatarV, GlassBtn, FieldV, SheetV,
-  DateStripV, SlotGridV, ApptCardV, ToastV, CountdownV,
+  DateStripV, SlotGridV, ApptCardV, ToastV, CountdownV, AddToCalendarBtnV,
 });

@@ -1,7 +1,10 @@
 // GET /api/admin/bookings?date=YYYY-MM-DD  →  bookings for that day (flattened)
+// GET /api/admin/bookings?since=ISO        →  bookings created after that moment
+//                                             (newest first, max 10) — used by the
+//                                             panel's new-booking notifications.
 //
-// Returns every booking on the date (any status) joined with its service option,
-// parent service, and customer. The frontend computes the KPIs.
+// Returns every booking joined with its service option, parent service, and
+// customer. The frontend computes the KPIs.
 
 import { json, badRequest, serverError, requireAuth, sb } from '../_lib.js';
 
@@ -45,6 +48,22 @@ export async function onRequestGet({ request, env }) {
   if (auth) return auth;
 
   const url = new URL(request.url);
+  const since = url.searchParams.get('since');
+  if (since) {
+    if (isNaN(Date.parse(since))) return badRequest('since inválido');
+    try {
+      const rows = await sb(
+        env,
+        'bookings?select=' + encodeURIComponent(SELECT) +
+          '&created_at=gt.' + encodeURIComponent(new Date(since).toISOString()) +
+          '&order=created_at.desc&limit=10'
+      );
+      return json({ bookings: (rows || []).map(flatten) });
+    } catch (err) {
+      return serverError(err.message);
+    }
+  }
+
   const date = url.searchParams.get('date');
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return badRequest('date=YYYY-MM-DD requerido');
 

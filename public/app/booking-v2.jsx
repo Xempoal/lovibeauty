@@ -140,6 +140,9 @@ function BookingV2(props) {
   }
 
   // ─── Confirmation screen ───
+  // Compacta a propósito: debe caber completa en la pantalla de un celular
+  // sin hacer scroll (icono chico, resumen en una tarjeta de una línea y
+  // datos bancarios condensados).
   if (confirmed[0]) {
     var booking = confirmed[0].booking;
     var customerFirstName = (name[0].trim().split(' ')[0] || '').trim();
@@ -148,45 +151,40 @@ function BookingV2(props) {
     return (
       <div className="lv-booking" data-screen-label="Confirmación">
         <PageTransition k="confirm">
-          <div className="lv-confirm">
+          <div className="lv-confirm compact">
             <div className="lv-confirm-icon wait">⏳</div>
             <h2>¡Apartamos tu lugar!</h2>
             <p className="lv-confirm-sub">
-              Tu cita quedó apartada por <strong>{holdMinutes} minutos</strong>.<br/>
-              Tienes <strong><CountdownV
+              Transfiere el anticipo y envía tu comprobante.<br/>
+              Te quedan <strong><CountdownV
                 targetMs={confirmed[0].expiresAtMs}
                 onExpire={function() { /* keep showing 0:00 */ }}
-              /></strong> para enviar tu comprobante.
+              /></strong> minutos.
             </p>
 
-            <div className="lv-chosen-card">
-              <div className="lv-chosen-top">
-                <span className="lv-chosen-emoji">📅</span>
-                <h2>{fmtDateV(booking.booking_date)}</h2>
-                <p className="lv-chosen-time">{fmtTimeV(booking.start_time)}</p>
-              </div>
-              <div className="lv-chosen-svc">
+            <div className="lv-mini-resumen">
+              <div>
+                <strong>{fmtDateV(booking.booking_date)} · {fmtTimeV(booking.start_time)}</strong>
                 <span>{booking.service_option_name}</span>
-                <strong>{fmtMoneyV(Number(booking.price))}</strong>
               </div>
+              <span className="lv-mini-price">{fmtMoneyV(Number(booking.price))}</span>
             </div>
 
-            <div className="lv-bankbox">
+            <div className="lv-bankbox compact">
               <div className="lv-bankrow"><em>Banco</em><span>{bankName}</span></div>
               <div className="lv-bankrow"><em>Titular</em><span>{bankHolder}</span></div>
               <div className="lv-bankrow"><em>CLABE</em><span>{bankClabe}</span></div>
               <div className="lv-bankrow"><em>Anticipo</em><span>{fmtMoneyV(DEPOSIT_V2)}</span></div>
             </div>
 
-            <p className="lv-paynote small">
-              Después de transferir, envíanos tu comprobante por WhatsApp para confirmar tu cita.
-            </p>
-
             <div className="lv-confirm-actions">
               <GlassBtn kind="whats" full href={whatsHref} target="_blank">
                 Enviar comprobante por WhatsApp
               </GlassBtn>
-              <GlassBtn kind="soft" full onClick={props.onClose}>Listo</GlassBtn>
+              <div className="lv-row2">
+                <AddToCalendarBtnV booking={booking} kind="glass">📅 A mi calendario</AddToCalendarBtnV>
+                <GlassBtn kind="soft" onClick={props.onClose}>Listo</GlassBtn>
+              </div>
             </div>
           </div>
         </PageTransition>

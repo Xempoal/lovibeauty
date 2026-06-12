@@ -451,6 +451,7 @@
   function logout() {
     token = null; tokenExp = 0; role = "admin"; tab = "hoy";
     localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(EXP_KEY); localStorage.removeItem(ROLE_KEY);
+    stopNotifPolling();
     render();
   }
 
@@ -517,6 +518,68 @@
   }
 
   // ══════════════════════════════════════════════════════════════
+  //  NOTIFICACIONES (citas nuevas)
+  // ══════════════════════════════════════════════════════════════
+  // Mientras el panel esté abierto, consulta cada 45 s si entraron reservas
+  // nuevas (?since=...) y lanza una notificación del navegador por cada una.
+  var NOTIF_LAST_KEY = "lb_notif_last_seen";
+  var notifTimer = null;
+
+  function notifSupported() { return "Notification" in window; }
+
+  function askNotifPermission() {
+    if (!notifSupported() || Notification.permission !== "default") return;
+    try { Notification.requestPermission().then(function () { render(); }); } catch (e) {}
+  }
+
+  function startNotifPolling() {
+    if (notifTimer || !authed()) return;
+    // Primera vez: marca "ahora" para no notificar citas viejas.
+    if (!localStorage.getItem(NOTIF_LAST_KEY)) {
+      localStorage.setItem(NOTIF_LAST_KEY, new Date().toISOString());
+    }
+    notifTimer = setInterval(checkNewBookings, 45000);
+    checkNewBookings();
+  }
+  function stopNotifPolling() {
+    if (notifTimer) { clearInterval(notifTimer); notifTimer = null; }
+  }
+
+  async function checkNewBookings() {
+    if (!authed()) { stopNotifPolling(); return; }
+    var last = localStorage.getItem(NOTIF_LAST_KEY);
+    if (!last) return;
+    var res;
+    try { res = await api("/bookings?since=" + encodeURIComponent(last)); }
+    catch (e) { return; /* sin red o sesión vencida: reintenta al siguiente tick */ }
+    var rows = res.bookings || [];
+    if (!rows.length) return;
+
+    var newest = rows.reduce(function (a, b) { return a.created_at > b.created_at ? a : b; });
+    localStorage.setItem(NOTIF_LAST_KEY, newest.created_at);
+
+    rows.slice(0, 5).forEach(function (b) {
+      var body = (b.option_name || b.service_name || "Servicio") + " · " +
+        fmtDateShort(b.date) + " " + fmtTime(b.start_time);
+      if (notifSupported() && Notification.permission === "granted") {
+        try {
+          var n = new Notification("Nueva cita 💅 " + b.customer_name, {
+            body: body, icon: "../assets/logo.png", tag: "lb-booking-" + b.id,
+          });
+          n.onclick = function () {
+            window.focus();
+            tab = "hoy"; selDate = b.date; render();
+            n.close();
+          };
+        } catch (e) {}
+      }
+    });
+    toast(rows.length === 1
+      ? "Nueva cita: " + rows[0].customer_name + " · " + fmtTime(rows[0].start_time)
+      : rows.length + " citas nuevas recibidas");
+  }
+
+  // ══════════════════════════════════════════════════════════════
   //  LOGIN
   // ══════════════════════════════════════════════════════════════
   function renderLogin() {
@@ -532,6 +595,9 @@
       try {
         var data = await api("/login", { method: "POST", body: { pin: pin } });
         setToken(data.token, data.expiresAt, data.role);
+        // Pedimos el permiso aquí: el click de "Entrar" cuenta como gesto del
+        // usuario, así el navegador muestra el diálogo de notificaciones.
+        askNotifPermission();
         render();
       } catch (e) {
         err.textContent = e.message || "PIN incorrecto";
@@ -578,7 +644,17 @@
     ]);
 
     var main = h("main", {}, []);
-    var wrap = h("div", { class: "wrap" }, [main]);
+    var wrap = h("div", { class: "wrap" }, []);
+    // Banner para activar notificaciones (fuera de <main>, que cada tab limpia).
+    if (notifSupported() && Notification.permission === "default") {
+      var actBtn = h("button", { class: "mini", style: "flex-shrink:0" }, ["Activar"]);
+      actBtn.addEventListener("click", askNotifPermission);
+      wrap.appendChild(h("div", { class: "alert", style: "display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px" }, [
+        h("span", {}, ["🔔 Activa las notificaciones para enterarte de cada cita nueva."]),
+        actBtn,
+      ]));
+    }
+    wrap.appendChild(main);
     app.appendChild(header);
     app.appendChild(wrap);
 
@@ -1634,6 +1710,7 @@
     stopScanner();
     if (!authed()) { renderLogin(); return; }
     renderShell();
+    startNotifPolling();
     if (tab !== "cancelaciones") prefetchCounts();
   }
 

@@ -263,6 +263,45 @@ function whatsBookingUrlV(serviceOptionName, dateStr, time, customerName) {
     '?text=' + encodeURIComponent(buildWhatsMessageV(serviceOptionName, dateStr, time, customerName));
 }
 
+// ─── Agregar al calendario (reservas reales de Supabase) ───
+// b: { booking_date, start_time, end_time, service_option_name }
+// En iPhone/iPad se descarga un .ics (abre el Calendario de Apple); en
+// Android/desktop se abre Google Calendar.
+function isIOSDeviceV() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function bookingCalStampsV(b) {
+  const d = b.booking_date.replace(/-/g, '');
+  const s = (b.start_time || '').slice(0, 5).replace(':', '') + '00';
+  const e = (b.end_time || b.start_time || '').slice(0, 5).replace(':', '') + '00';
+  return { start: d + 'T' + s, end: d + 'T' + e };
+}
+function googleCalUrlForBookingV(b) {
+  const t = bookingCalStampsV(b);
+  const p = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: 'LoviBeauty — ' + b.service_option_name,
+    dates: t.start + '/' + t.end,
+    details: 'Cita en LoviBeauty Studio.',
+    location: 'LoviBeauty Studio',
+  });
+  return 'https://calendar.google.com/calendar/render?' + p.toString();
+}
+function downloadBookingICSV(b) {
+  const t = bookingCalStampsV(b);
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//LoviBeauty//ES', 'BEGIN:VEVENT',
+    'UID:' + (b.id || t.start) + '@lovibeauty.mx', 'DTSTART:' + t.start, 'DTEND:' + t.end,
+    'SUMMARY:LoviBeauty — ' + b.service_option_name, 'DESCRIPTION:Cita en LoviBeauty Studio.',
+    'LOCATION:LoviBeauty Studio', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  const blob = new Blob([ics], { type: 'text/calendar' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'LoviBeauty-cita.ics';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
 // Format a millisecond duration as M:SS (minutes:seconds).
 function fmtCountdownV(ms) {
   if (ms < 0) ms = 0;
@@ -279,4 +318,5 @@ Object.assign(window, {
   loadDBV, saveDBV, loadSessionV, saveSessionV, uidV, mkFolioV,
   getSlotsV, getAutoSlots, STATUS_META_V, googleCalUrlV, downloadICSV, whatsAppUrlV, svcV, staffOfV,
   computeFreeSlotsV, nextOpenDatesV, whatsBookingUrlV, fmtCountdownV,
+  isIOSDeviceV, googleCalUrlForBookingV, downloadBookingICSV,
 });
