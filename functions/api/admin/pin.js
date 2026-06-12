@@ -6,11 +6,11 @@
 // token. Existing tokens stay valid (the token signing key is env-based, not the
 // login PIN), so changing the PIN doesn't log the owner out.
 
-import { json, badRequest, unauthorized, serverError, requireAuth, sb, readJson,
+import { json, badRequest, unauthorized, serverError, requireAdmin, sb, readJson,
          getStoredAdminPin, verifyPin, hashPin } from './_lib.js';
 
 export async function onRequestPost({ request, env }) {
-  const auth = await requireAuth(request, env);
+  const auth = await requireAdmin(request, env);
   if (auth) return auth;
 
   const body = await readJson(request);

@@ -432,9 +432,10 @@
   function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
 
   // ─── state ───
-  var TOKEN_KEY = "lb_admin_token", EXP_KEY = "lb_admin_exp";
+  var TOKEN_KEY = "lb_admin_token", EXP_KEY = "lb_admin_exp", ROLE_KEY = "lb_admin_role";
   var token = localStorage.getItem(TOKEN_KEY);
   var tokenExp = parseInt(localStorage.getItem(EXP_KEY) || "0", 10);
+  var role = localStorage.getItem(ROLE_KEY) || "admin"; // "admin" (dueña) | "staff"
   var tab = "hoy";
   var selDate = todayStr();
   var cancelCount = 0;
@@ -442,13 +443,14 @@
   var catFilter = null;       // service id selected in the subservicios filter
 
   function authed() { return token && tokenExp > Date.now(); }
-  function setToken(t, exp) {
-    token = t; tokenExp = exp;
+  function setToken(t, exp, r) {
+    token = t; tokenExp = exp; role = r || "admin";
     localStorage.setItem(TOKEN_KEY, t); localStorage.setItem(EXP_KEY, String(exp));
+    localStorage.setItem(ROLE_KEY, role);
   }
   function logout() {
-    token = null; tokenExp = 0;
-    localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(EXP_KEY);
+    token = null; tokenExp = 0; role = "admin"; tab = "hoy";
+    localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(EXP_KEY); localStorage.removeItem(ROLE_KEY);
     render();
   }
 
@@ -529,7 +531,7 @@
       btn.disabled = true; btn.textContent = "Entrando…"; err.textContent = "";
       try {
         var data = await api("/login", { method: "POST", body: { pin: pin } });
-        setToken(data.token, data.expiresAt);
+        setToken(data.token, data.expiresAt, data.role);
         render();
       } catch (e) {
         err.textContent = e.message || "PIN incorrecto";
@@ -555,7 +557,9 @@
   // ══════════════════════════════════════════════════════════════
   function renderShell() {
     clear(app);
-    var tabsDef = [["hoy", "Hoy"], ["lealtad", "Lealtad"], ["cancelaciones", "Cancelaciones"], ["bloqueos", "Bloqueos"], ["catalogo", "Catálogo"], ["config", "Configuración"]];
+    // El staff ve todo menos Configuración (CLABE, WhatsApp, cambio de PIN).
+    var tabsDef = [["hoy", "Hoy"], ["lealtad", "Lealtad"], ["clientes", "Clientes"], ["cancelaciones", "Cancelaciones"], ["bloqueos", "Bloqueos"], ["catalogo", "Catálogo"]];
+    if (role !== "staff") tabsDef.push(["config", "Configuración"]);
     var tabBar = h("div", { class: "tabs" }, tabsDef.map(function (t) {
       var children = [t[1]];
       if (t[0] === "cancelaciones" && cancelCount > 0) children.push(h("span", { class: "dot" }, [String(cancelCount)]));
@@ -566,7 +570,7 @@
       h("div", { class: "head-row" }, [
         h("div", { class: "brand" }, [
           h("img", { src: "../assets/logo.png", alt: "" }),
-          h("div", {}, [h("strong", {}, ["LoviBeauty"]), h("span", {}, ["Panel del estudio"])]),
+          h("div", {}, [h("strong", {}, ["LoviBeauty"]), h("span", {}, [role === "staff" ? "Panel · Staff" : "Panel del estudio"])]),
         ]),
         h("button", { class: "logout", onclick: logout }, ["Salir"]),
       ]),
@@ -580,10 +584,11 @@
 
     if (tab === "hoy") renderHoy(main);
     else if (tab === "lealtad") renderLealtad(main);
+    else if (tab === "clientes") renderClientes(main);
     else if (tab === "cancelaciones") renderCancelaciones(main);
     else if (tab === "bloqueos") renderBloqueos(main);
     else if (tab === "catalogo") renderCatalogo(main);
-    else if (tab === "config") renderConfig(main);
+    else if (tab === "config" && role !== "staff") renderConfig(main);
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -842,6 +847,75 @@
   }
 
   // ══════════════════════════════════════════════════════════════
+  //  TAB: CLIENTES (admin y staff)
+  // ══════════════════════════════════════════════════════════════
+  function renderClientes(main) {
+    clear(main);
+    main.appendChild(h("div", { class: "sec" }, ["Clientas"]));
+
+    var searchI = h("input", { type: "search", placeholder: "Buscar por nombre, correo o teléfono…", autocomplete: "off" });
+    main.appendChild(h("label", { class: "field" }, [searchI]));
+
+    var listWrap = h("div", {}, []);
+    main.appendChild(listWrap);
+    var loading = h("div", { class: "loading" }, ["Cargando clientas…"]);
+    listWrap.appendChild(loading);
+
+    var all = [];
+
+    function paint() {
+      clear(listWrap);
+      var q = searchI.value.trim().toLowerCase();
+      var rows = !q ? all : all.filter(function (c) {
+        return ((c.full_name || "") + " " + (c.email || "") + " " + (c.phone || "")).toLowerCase().indexOf(q) !== -1;
+      });
+      if (!rows.length) {
+        listWrap.appendChild(h("div", { class: "empty" }, [all.length ? "Sin resultados para esa búsqueda." : "Aún no hay clientas registradas."]));
+        return;
+      }
+      var list = h("div", { class: "list" }, rows.map(function (c) {
+        var metaBits = [];
+        if (c.email) metaBits.push(c.email);
+        if (c.phone) metaBits.push(c.phone);
+        if (c.loyalty_visits != null) metaBits.push("Sellos " + c.loyalty_visits + "/8");
+
+        var acts = h("div", { class: "cat-acts" }, []);
+        if (c.phone) {
+          acts.appendChild(h("a", { class: "mini", href: waLink(c.phone, ""), target: "_blank", rel: "noopener" }, ["WhatsApp"]));
+        }
+        if (c.registered) {
+          // Recuperación: muestra la contraseña solo al tocar el botón.
+          var passBtn = h("button", { class: "mini" }, ["Ver contraseña"]);
+          var shown = false;
+          passBtn.addEventListener("click", function () {
+            shown = !shown;
+            passBtn.textContent = shown ? ("🔑 " + c.password) : "Ver contraseña";
+          });
+          acts.appendChild(passBtn);
+        }
+
+        return h("div", { class: "cat-item", style: "flex-direction:column;align-items:stretch" }, [
+          h("div", { style: "display:flex;gap:10px;align-items:flex-start;justify-content:space-between" }, [
+            h("div", { class: "cat-mid" }, [
+              h("strong", {}, [c.full_name || "Clienta"]),
+              h("p", {}, [metaBits.join(" · ") || "Sin datos de contacto"]),
+            ]),
+            h("span", { class: "badge " + (c.registered ? "b-confirmed" : "badge-off") }, [c.registered ? "Con cuenta" : "Invitada"]),
+          ]),
+          acts,
+        ]);
+      }));
+      listWrap.appendChild(list);
+    }
+
+    searchI.addEventListener("input", paint);
+
+    api("/customers")
+      .then(function (res) { all = res.customers || []; paint(); })
+      .catch(function (e) { loading.className = "err"; loading.textContent = e.message; });
+  }
+
+  // ══════════════════════════════════════════════════════════════
   //  TAB: CANCELACIONES
   // ══════════════════════════════════════════════════════════════
   async function renderCancelaciones(main) {
@@ -857,9 +931,7 @@
 
     var reqs = res.requests || [];
     cancelCount = reqs.length;
-    // refresh the tab badge
-    var badgeTab = document.querySelectorAll(".tab")[2];
-    if (badgeTab) renderShellBadge();
+    renderShellBadge();
 
     if (reqs.length === 0) { main.appendChild(h("div", { class: "empty" }, ["No hay solicitudes de cancelación."])); return; }
 
@@ -1517,11 +1589,13 @@
 
   // keep the cancelaciones badge in sync after a fetch
   function renderShellBadge() {
-    var tabsDef = document.querySelectorAll(".tabs .tab");
-    if (tabsDef[2]) {
-      var existing = tabsDef[2].querySelector(".dot");
+    var tabs = document.querySelectorAll(".tabs .tab");
+    for (var i = 0; i < tabs.length; i++) {
+      if (tabs[i].textContent.indexOf("Cancelaciones") !== 0) continue;
+      var existing = tabs[i].querySelector(".dot");
       if (existing) existing.remove();
-      if (cancelCount > 0) tabsDef[2].appendChild(h("span", { class: "dot" }, [String(cancelCount)]));
+      if (cancelCount > 0) tabs[i].appendChild(h("span", { class: "dot" }, [String(cancelCount)]));
+      break;
     }
   }
 

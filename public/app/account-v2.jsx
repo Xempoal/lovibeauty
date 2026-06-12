@@ -11,19 +11,26 @@ function AuthScreenV(props) {
   var mode = _uS(props.mode || 'login');
   var name = _uS(''), phone = _uS(''), email = _uS(''), pass = _uS('');
   var err = _uS('');
+  var busy = _uS(false);
 
+  // onLogin / onRegister hablan con Supabase y devuelven una promesa que
+  // resuelve a un mensaje de error (string) o null si todo salió bien.
   function submit(e) {
     e.preventDefault();
+    if (busy[0]) return;
     err[1]('');
+    var p;
     if (mode[0] === 'login') {
-      var r = props.onLogin(email[0].trim().toLowerCase(), pass[0]);
-      if (r) err[1](r);
+      p = props.onLogin(email[0].trim().toLowerCase(), pass[0]);
     } else {
       if (!name[0].trim() || phone[0].trim().length < 8) { err[1]('Completa tu nombre y teléfono'); return; }
       if (pass[0].length < 6) { err[1]('La contraseña debe tener al menos 6 caracteres'); return; }
-      var r2 = props.onRegister({ name: name[0].trim(), phone: phone[0].trim(), email: email[0].trim().toLowerCase(), password: pass[0] });
-      if (r2) err[1](r2);
+      p = props.onRegister({ name: name[0].trim(), phone: phone[0].trim(), email: email[0].trim().toLowerCase(), password: pass[0] });
     }
+    busy[1](true);
+    Promise.resolve(p)
+      .then(function(r) { if (r) err[1](r); })
+      .finally(function() { busy[1](false); });
   }
 
   return (
@@ -34,7 +41,9 @@ function AuthScreenV(props) {
         <FieldV label="Correo electrónico" type="email" value={email[0]} onChange={email[1]} placeholder="tu@correo.com" autoFocus={mode[0] === 'login'} />
         <FieldV label="Contraseña" type="password" value={pass[0]} onChange={pass[1]} placeholder="••••••" />
         {err[0] && <p className="lv-err">{err[0]}</p>}
-        <GlassBtn full type="submit">{mode[0] === 'login' ? 'Entrar' : 'Crear mi cuenta'}</GlassBtn>
+        <GlassBtn full type="submit" disabled={busy[0]}>
+          {busy[0] ? (mode[0] === 'login' ? 'Entrando…' : 'Creando…') : (mode[0] === 'login' ? 'Entrar' : 'Crear mi cuenta')}
+        </GlassBtn>
         <button type="button" className="lv-linkbtn" onClick={function() { mode[1](mode[0] === 'login' ? 'register' : 'login'); err[1](''); }}>
           {mode[0] === 'login' ? '¿No tienes cuenta? Créala aquí' : '¿Ya tienes cuenta? Inicia sesión'}
         </button>
@@ -94,19 +103,6 @@ function LoyaltyCardV(props) {
         })}
       </div>
 
-      <div className="lv-loy-legend">
-        {[3,6,8].map(function(n) {
-          var unlocked = visits >= n;
-          return (
-            <div key={n} className={'lv-loy-leg' + (unlocked ? ' on' : '')}>
-              <span className="lv-loy-leg-n">Visita {n}</span>
-              <span>{LOYALTY_REWARDS_V[n].label}</span>
-              {unlocked && <i>✓</i>}
-            </div>
-          );
-        })}
-      </div>
-
       {loading && <p className="lv-loyalty-note">Cargando tu tarjeta…</p>}
       {!loading && !card && <p className="lv-loyalty-note">No pudimos cargar tu tarjeta. Desliza hacia abajo para reintentar más tarde 💕</p>}
       {card && (
@@ -116,6 +112,26 @@ function LoyaltyCardV(props) {
           <span className="lv-loy-hint">Muestra este código en el estudio para sumar tu visita</span>
         </div>
       )}
+    </div>
+  );
+}
+
+// Leyenda de premios — va FUERA de la tarjeta, justo debajo, para que la
+// tarjeta conserve su proporción rectangular.
+function LoyaltyLegendV(props) {
+  var visits = props.card ? props.card.visits : 0;
+  return (
+    <div className="lv-loy-legend">
+      {[3,6,8].map(function(n) {
+        var unlocked = visits >= n;
+        return (
+          <div key={n} className={'lv-loy-leg' + (unlocked ? ' on' : '')}>
+            <span className="lv-loy-leg-n">Visita {n}</span>
+            <span>{LOYALTY_REWARDS_V[n].label}</span>
+            {unlocked && <i>✓</i>}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -203,19 +219,16 @@ function MyAppointmentsV(props) {
   var past = rows.filter(function(b) { return upcoming.indexOf(b) === -1; });
 
   return (
-    <div className="lv-page" data-screen-label="Mis citas">
+    <div className="lv-page" data-screen-label="Mi cuenta">
       <div className="lv-page-head">
         <div>
           <span className="lv-page-eyebrow">Hola, {user.name.split(' ')[0]} 💕</span>
-          <h2>Mis citas</h2>
+          <h2>Mi cuenta</h2>
         </div>
         <button className="lv-linkbtn" onClick={props.onLogout}>Cerrar sesión</button>
       </div>
 
-      <h3 className="lv-sec">Tarjeta de lealtad</h3>
-      <LoyaltyCardV card={card[0]} loading={cardLoading[0]} />
-
-      <h3 className="lv-sec">Próximas</h3>
+      <h3 className="lv-sec">Mis citas</h3>
       {bookings[0] === null && <div className="lv-emptycard"><p>Cargando tus citas…</p></div>}
       {bookings[0] !== null && upcoming.length === 0 && (
         <div className="lv-emptycard">
@@ -269,8 +282,12 @@ function MyAppointmentsV(props) {
       <div className="lv-list">
         {past.map(function(b) { return <SbApptCardV key={b.id} booking={b} compact />; })}
       </div>
+
+      <h3 className="lv-sec">Tarjeta de lealtad</h3>
+      <LoyaltyCardV card={card[0]} loading={cardLoading[0]} />
+      <LoyaltyLegendV card={card[0]} />
     </div>
   );
 }
 
-Object.assign(window, { AuthScreenV, MyAppointmentsV, LoyaltyCardV });
+Object.assign(window, { AuthScreenV, MyAppointmentsV, LoyaltyCardV, LoyaltyLegendV });

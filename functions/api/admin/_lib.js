@@ -51,35 +51,52 @@ async function hmac(secret, message) {
   return b64urlFromBytes(new Uint8Array(sig));
 }
 
-export async function signToken(env) {
+// role: 'admin' (la dueña, acceso total) | 'staff' (todo menos Configuración).
+export async function signToken(env, role) {
   const expiresAt = Date.now() + TOKEN_TTL_MS;
-  const body = b64urlFromString(JSON.stringify({ exp: expiresAt }));
+  const body = b64urlFromString(JSON.stringify({ exp: expiresAt, role: role || 'admin' }));
   const sig = await hmac(tokenSecret(env), body);
   return { token: body + '.' + sig, expiresAt };
 }
 
+// Returns the token payload ({ exp, role }) or null when invalid/expired.
 async function verifyToken(env, token) {
-  if (!token || typeof token !== 'string') return false;
+  if (!token || typeof token !== 'string') return null;
   const dot = token.indexOf('.');
-  if (dot < 1) return false;
+  if (dot < 1) return null;
   const body = token.slice(0, dot);
   const sig = token.slice(dot + 1);
   const expected = await hmac(tokenSecret(env), body);
-  if (sig !== expected) return false;
+  if (sig !== expected) return null;
   try {
     const payload = JSON.parse(stringFromB64url(body));
-    return typeof payload.exp === 'number' && payload.exp > Date.now();
+    if (typeof payload.exp !== 'number' || payload.exp <= Date.now()) return null;
+    // Tokens minted before roles existed are admin sessions.
+    if (!payload.role) payload.role = 'admin';
+    return payload;
   } catch (_) {
-    return false;
+    return null;
   }
 }
 
-// Returns null when authorized, or a 401 Response to return immediately.
-export async function requireAuth(request, env) {
+async function tokenPayload(request, env) {
   const header = request.headers.get('authorization') || request.headers.get('Authorization') || '';
   const m = header.match(/^Bearer\s+(.+)$/i);
-  const ok = m && (await verifyToken(env, m[1]));
-  return ok ? null : unauthorized();
+  return m ? verifyToken(env, m[1]) : null;
+}
+
+// Returns null when authorized (any role), or a 401 Response to return immediately.
+export async function requireAuth(request, env) {
+  const payload = await tokenPayload(request, env);
+  return payload ? null : unauthorized();
+}
+
+// Returns null only for admin sessions; 401 without token, 403 for staff.
+export async function requireAdmin(request, env) {
+  const payload = await tokenPayload(request, env);
+  if (!payload) return unauthorized();
+  if (payload.role !== 'admin') return json({ error: 'Solo la dueña puede usar esta sección' }, 403);
+  return null;
 }
 
 // ─── Supabase REST (PostgREST) with the service-role key ─────────────────────

@@ -331,7 +331,10 @@ function AppV() {
     });
   }
 
-  var user = session[0] && session[0].type === 'user' ? db[0].users.find(function(u) { return u.id === session[0].userId; }) : null;
+  // Cuenta de clienta: la sesión guarda el usuario completo (name/email/phone)
+  // devuelto por los RPCs de Supabase. Sesiones viejas (userId de localStorage)
+  // simplemente quedan deslogueadas.
+  var user = session[0] && session[0].type === 'user' ? (session[0].user || null) : null;
   var isAdmin = session[0] && session[0].type === 'admin';
 
   // Legacy helpers kept for the admin panel / "Mis citas".
@@ -347,25 +350,38 @@ function AppV() {
   function addBlock(b) { mutate(function(d) { d.blocks.push(Object.assign({}, b, { id: uidV() })); return d; }); }
   function removeBlock(id) { mutate(function(d) { d.blocks = d.blocks.filter(function(b) { return b.id !== id; }); return d; }); }
 
-  function doLogin(email, pass) {
+  async function doLogin(email, pass) {
     if (email === ADMIN_EMAIL_V2 && pass === ADMIN_PASS_V2) {
       var s = { type: 'admin' }; session[1](s); saveSessionV(s); authMode[1](null); view[1]('admin'); return null;
     }
-    var u = db[0].users.find(function(x) { return x.email === email && x.password === pass; });
-    if (!u) return 'Correo o contraseña incorrectos';
-    var s2 = { type: 'user', userId: u.id }; session[1](s2); saveSessionV(s2); authMode[1](null);
-    view[1]('cuenta');
-    toast('¡Bienvenida, ' + u.name.split(' ')[0] + '!');
-    return null;
+    try {
+      var row = await window.lbApi.loginAccount(email, pass);
+      if (!row) return 'Correo o contraseña incorrectos';
+      var s2 = { type: 'user', user: { name: row.full_name, email: row.email, phone: row.phone || '' } };
+      session[1](s2); saveSessionV(s2); authMode[1](null);
+      view[1]('cuenta');
+      toast('¡Bienvenida, ' + row.full_name.split(' ')[0] + '!');
+      return null;
+    } catch (err) {
+      console.error('[app] login', err);
+      return 'No pudimos iniciar sesión. Revisa tu conexión e intenta de nuevo.';
+    }
   }
-  function doRegister(data) {
-    if (db[0].users.some(function(x) { return x.email === data.email; })) return 'Ese correo ya tiene cuenta';
+  async function doRegister(data) {
     if (!data.email.includes('@')) return 'Escribe un correo válido';
-    var u = Object.assign({}, data, { id: uidV() });
-    mutate(function(d) { d.users.push(u); return d; });
-    var s = { type: 'user', userId: u.id }; session[1](s); saveSessionV(s); authMode[1](null);
-    toast('¡Cuenta creada! 💕');
-    return null;
+    try {
+      var row = await window.lbApi.registerAccount(data);
+      var s = { type: 'user', user: { name: row.full_name, email: row.email, phone: row.phone || '' } };
+      session[1](s); saveSessionV(s); authMode[1](null);
+      view[1]('cuenta');
+      toast('¡Cuenta creada! 💕');
+      return null;
+    } catch (err) {
+      if (err.code === '23505') return 'Ese correo ya tiene cuenta. Inicia sesión.';
+      if (err.code === '22023') return 'Revisa tus datos: correo válido y contraseña de al menos 6 caracteres.';
+      console.error('[app] register', err);
+      return 'No pudimos crear tu cuenta. Intenta de nuevo.';
+    }
   }
   function logout() { session[1](null); saveSessionV(null); view[1]('home'); }
 
@@ -417,7 +433,7 @@ function AppV() {
           <nav className="lv-nav">
             {!isAdmin && view[0] !== 'cuenta' && (
               <button className="lv-navlink" onClick={function() { user ? view[1]('cuenta') : authMode[1]('login'); }}>
-                {user ? 'Mis citas' : 'Iniciar sesión'}
+                {user ? 'Mi cuenta' : 'Iniciar sesión'}
               </button>
             )}
             {isAdmin && view[0] !== 'admin' && (

@@ -168,6 +168,34 @@
       return data;
     },
 
+    // Customer accounts (stored in public.customers via RPCs).
+    // registerAccount throws code 23505 when the email already has an account.
+    async registerAccount(params) {
+      const { data, error } = await sb.rpc('register_account', {
+        p_email: params.email,
+        p_full_name: params.name,
+        p_phone: params.phone || null,
+        p_password: params.password,
+      });
+      if (error) {
+        const e = new Error(error.message);
+        e.code = error.code;
+        throw e;
+      }
+      return Array.isArray(data) ? data[0] : data;
+    },
+
+    // Returns { full_name, email, phone } on success, null on bad credentials.
+    async loginAccount(email, password) {
+      const { data, error } = await sb.rpc('login_account', {
+        p_email: email,
+        p_password: password,
+      });
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      return row || null;
+    },
+
     // Loyalty card for a registered user. Upserts the customer by email and
     // returns { card_code, visits, total_visits } (creates the card on first use).
     async getLoyaltyCard(email, fullName, phone) {

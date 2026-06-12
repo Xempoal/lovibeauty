@@ -7,12 +7,12 @@
 // table is RLS-public for SELECT). Only this endpoint, with the service-role key,
 // can write them.
 
-import { json, badRequest, serverError, requireAuth, sb, readJson } from '../_lib.js';
+import { json, badRequest, serverError, requireAdmin, sb, readJson } from '../_lib.js';
 
 const ALLOWED = ['bank_clabe', 'bank_name', 'bank_holder', 'whatsapp_number', 'hold_minutes'];
 
 export async function onRequestGet({ request, env }) {
-  const auth = await requireAuth(request, env);
+  const auth = await requireAdmin(request, env);
   if (auth) return auth;
 
   try {
@@ -26,7 +26,7 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPut({ request, env }) {
-  const auth = await requireAuth(request, env);
+  const auth = await requireAdmin(request, env);
   if (auth) return auth;
 
   const body = await readJson(request);
