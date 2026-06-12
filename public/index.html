@@ -161,14 +161,17 @@
     scrollbar-width: none; -ms-overflow-style: none;
   }
   .lv-bantrack::-webkit-scrollbar { display: none; }
+  .lv-banslide {
+    flex: 0 0 100%; width: 100%; min-width: 0;
+    scroll-snap-align: start; scroll-snap-stop: always;
+    padding: 0 18px;
+  }
   .lv-banner {
-    position: relative; flex: 0 0 100%; width: 100%; scroll-snap-align: start;
+    position: relative; display: block; width: 100%;
     aspect-ratio: 16 / 8.4; overflow: hidden; cursor: pointer; text-align: left;
     border-radius: 26px; background: #1a0f12;
-    border: 0 solid transparent;
+    box-shadow: var(--shadow-card);
   }
-  .lv-bantrack { padding: 0 18px; gap: 12px; }
-  .lv-banner { flex: 0 0 calc(100% - 36px); }
   .lv-banner-img {
     position: absolute; inset: 0; background-size: cover; background-position: center;
     transition: transform 0.7s var(--ease);
@@ -258,6 +261,45 @@
   .lv-skel-banner { aspect-ratio: 16 / 8.4; border-radius: 26px; }
   .lv-skel-iconrow { display: flex; justify-content: space-around; gap: 12px; }
   .lv-skel-icon { width: 82px; height: 82px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ------------- LOYALTY CARD ------------- */
+  .lv-loyalty {
+    position: relative; overflow: hidden;
+    background: linear-gradient(135deg, var(--primary-deep) 0%, var(--primary) 55%, #B8556F 100%);
+    border-radius: var(--radius); padding: 20px 18px 16px;
+    color: #fff; display: flex; flex-direction: column; gap: 14px;
+    box-shadow: 0 14px 36px -12px rgba(126, 35, 66, 0.55);
+  }
+  .lv-loyalty::before {
+    content: ''; position: absolute; top: -70px; right: -60px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.16), transparent 65%);
+  }
+  .lv-loyalty::after {
+    content: '✦'; position: absolute; top: 12px; right: 16px;
+    color: rgba(255, 255, 255, 0.7); font-size: 14px;
+    animation: lv-twinkle 4s ease-in-out infinite;
+  }
+  .lv-loyalty-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .lv-loyalty-top > div { display: flex; flex-direction: column; gap: 2px; }
+  .lv-loyalty-top strong { font-family: var(--display); font-style: italic; font-size: 22px; letter-spacing: 0.01em; }
+  .lv-loyalty-top span { font-size: 12.5px; opacity: 0.85; }
+  .lv-loyalty-soon {
+    flex-shrink: 0; margin-right: 18px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 6px 12px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(6px);
+  }
+  .lv-loyalty-stamps { display: flex; gap: 8px; flex-wrap: wrap; }
+  .lv-loyalty-stamp {
+    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px dashed rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.55); font-size: 15px;
+  }
+  .lv-loyalty-stamp:last-child { border-style: solid; border-color: var(--gold); background: rgba(255, 255, 255, 0.12); }
+  .lv-loyalty-note { font-size: 12px; opacity: 0.8; }
 
   /* ------------- MARQUEE ------------- */
   .lv-marquee {
@@ -853,35 +895,48 @@
     .lv-navlink { padding: 10px 20px; font-size: 14px; }
 
     .lv-apphead {
-      width: 100%; max-width: 1080px; margin: 0 auto;
-      padding: 44px 32px 10px;
+      width: 100%; max-width: 980px; margin: 0 auto;
+      padding: 52px 32px 14px;
+      align-items: center; text-align: center; gap: 10px;
     }
-    .lv-apphead h1 { font-size: clamp(40px, 4.6vw, 52px); }
-    .lv-greet { font-size: 11px; }
-    .lv-apphead .lv-spark.s1 { right: 12%; top: 40px; font-size: 20px; }
-    .lv-apphead .lv-spark.s2 { right: 24%; bottom: 10px; font-size: 13px; }
+    .lv-apphead h1 { font-size: clamp(44px, 5vw, 58px); }
+    .lv-greet { font-size: 11.5px; }
+    .lv-apphead .lv-spark.s1 { right: 16%; top: 52px; font-size: 22px; }
+    .lv-apphead .lv-spark.s2 { left: 18%; bottom: 14px; right: auto; font-size: 14px; }
 
-    .lv-bansec { width: 100%; max-width: 1080px; margin: 0 auto; padding: 16px 0 6px; }
-    .lv-bantrack { padding: 0 32px; gap: 16px; }
-    .lv-banner { flex: 0 0 calc(100% - 64px); aspect-ratio: 21 / 7; border-radius: 30px; }
-    .lv-banner-body { padding: 36px 44px; max-width: 60%; gap: 8px; }
-    .lv-banner-body h3 { font-size: clamp(30px, 3.6vw, 42px); }
-    .lv-banner-body p { font-size: 15px; }
-    .lv-banner-cta { font-size: 14px; padding: 11px 20px; margin-top: 10px; }
-    .lv-banner-spark { top: 22px; right: 28px; font-size: 19px; }
+    .lv-bansec { width: 100%; max-width: 980px; margin: 0 auto; padding: 18px 0 8px; }
+    .lv-banslide { padding: 0 32px; }
+    .lv-banner { aspect-ratio: 21 / 8; border-radius: 32px; box-shadow: var(--shadow-lift); }
+    .lv-banner-body { padding: 40px 48px; max-width: 58%; gap: 9px; }
+    .lv-banner-body h3 { font-size: clamp(32px, 3.8vw, 44px); }
+    .lv-banner-body p { font-size: 16px; }
+    .lv-banner-cta { font-size: 14.5px; padding: 12px 22px; margin-top: 12px; }
+    .lv-banner-spark { top: 24px; right: 30px; font-size: 20px; }
+    .lv-bandots { padding-top: 16px; }
+    .lv-bandot { width: 7px; height: 7px; }
+    .lv-bandot.on { width: 24px; }
 
-    .lv-iconsec { width: 100%; max-width: 1080px; margin: 0 auto; padding: 30px 32px 8px; }
-    .lv-iconsec-head h2 { font-size: 30px; }
+    .lv-iconsec { width: 100%; max-width: 980px; margin: 0 auto; padding: 40px 32px 10px; }
+    .lv-iconsec-head { justify-content: center; flex-direction: column; align-items: center; gap: 2px; padding-bottom: 26px; }
+    .lv-iconsec-head h2 { font-size: 34px; }
+    .lv-iconsec-hint { font-size: 13px; }
     .lv-icon-grid {
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 26px 14px; justify-items: center;
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 36px 44px;
     }
-    .lv-icon-ring { width: 104px; height: 104px; }
-    .lv-icon-name { font-size: 14px; max-width: 130px; }
+    .lv-icon-item { gap: 13px; }
+    .lv-icon-ring { width: 136px; height: 136px; padding: 4px; }
+    .lv-icon-bubble { border-width: 4px; }
+    .lv-icon-name { font-size: 15.5px; max-width: 150px; }
 
-    .lv-home-skel { width: 100%; max-width: 1080px; margin: 0 auto; padding: 16px 32px; }
-    .lv-skel-banner { aspect-ratio: 21 / 7; }
+    .lv-home-skel { width: 100%; max-width: 980px; margin: 0 auto; padding: 18px 32px; }
+    .lv-skel-banner { aspect-ratio: 21 / 8; }
+    .lv-skel-icon { width: 136px; height: 136px; }
+    .lv-marquee { margin-top: 18px; }
     .lv-marquee-seg span { font-size: 20px; padding: 0 20px; }
+
+    .lv-loyalty { padding: 26px 26px 20px; }
+    .lv-loyalty-stamp { width: 44px; height: 44px; font-size: 17px; }
 
     .lv-foot-section { padding: 32px; width: 100%; max-width: 1200px; margin: 0 auto; }
     .lv-foot-card { padding: 28px; }
@@ -902,8 +957,10 @@
   }
 
   @media (min-width: 1100px) {
-    .lv-apphead, .lv-bansec, .lv-iconsec, .lv-home-skel { max-width: 1160px; }
-    .lv-icon-ring { width: 116px; height: 116px; }
+    .lv-apphead, .lv-bansec, .lv-iconsec, .lv-home-skel { max-width: 1040px; }
+    .lv-icon-ring { width: 150px; height: 150px; }
+    .lv-skel-icon { width: 150px; height: 150px; }
+    .lv-icon-grid { gap: 40px 56px; }
     .lv-foot-section { padding: 40px; }
   }
 

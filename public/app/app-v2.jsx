@@ -55,23 +55,25 @@ function BannerCarousel(props) {
         onTouchStart={pauseTouch} onMouseDown={pauseTouch}>
         {banners.map(function(b, i) {
           return (
-            <button key={b.id} className="lv-banner" onClick={function() { props.onPickBanner(b); }}>
-              {b.image_url
-                ? <div className="lv-banner-img" style={{ backgroundImage: 'url(' + b.image_url + ')' }}></div>
-                : <div className="lv-banner-img lv-banner-grad"></div>}
-              <div className="lv-banner-shade"></div>
-              <span className="lv-banner-spark" aria-hidden="true">✦</span>
-              <div className="lv-banner-body">
-                <h3>{b.title}</h3>
-                {b.subtitle && <p>{b.subtitle}</p>}
-                {b.service_id && (
-                  <span className="lv-banner-cta">
-                    Reservar
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </span>
-                )}
-              </div>
-            </button>
+            <div key={b.id} className="lv-banslide">
+              <button className="lv-banner" onClick={function() { props.onPickBanner(b); }}>
+                {b.image_url
+                  ? <div className="lv-banner-img" style={{ backgroundImage: 'url(' + b.image_url + ')' }}></div>
+                  : <div className="lv-banner-img lv-banner-grad"></div>}
+                <div className="lv-banner-shade"></div>
+                <span className="lv-banner-spark" aria-hidden="true">✦</span>
+                <div className="lv-banner-body">
+                  <h3>{b.title}</h3>
+                  {b.subtitle && <p>{b.subtitle}</p>}
+                  {b.service_id && (
+                    <span className="lv-banner-cta">
+                      Reservar
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </span>
+                  )}
+                </div>
+              </button>
+            </div>
           );
         })}
       </div>
@@ -252,7 +254,6 @@ function AdminLoginV(props) {
         <FieldV label="Contraseña" type="password" value={pass[0]} onChange={pass[1]} placeholder="••••••" />
         {err[0] && <p className="lv-err">{err[0]}</p>}
         <GlassBtn full type="submit">Entrar al panel</GlassBtn>
-        <p className="lv-demo-hint">Demo: <code>{ADMIN_EMAIL_V2}</code> / <code>{ADMIN_PASS_V2}</code></p>
       </form>
     </SheetV>
   );

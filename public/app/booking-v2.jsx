@@ -90,7 +90,6 @@ function BookingV2(props) {
 
   function isContactValid() {
     return name[0].trim().length >= 2 &&
-           /@.+\./.test(email[0].trim()) &&
            phone[0].trim().length >= 8;
   }
 
@@ -104,7 +103,7 @@ function BookingV2(props) {
         date:            date[0],
         startTime:       slot[0].time,
         fullName:        name[0].trim(),
-        email:           email[0].trim().toLowerCase(),
+        email:           email[0].trim().toLowerCase() || null,
         phone:           phone[0].trim(),
         paymentMethod:   'transfer',
       });
@@ -123,7 +122,7 @@ function BookingV2(props) {
         submitError[1]('Otra clienta acaba de tomar ese horario. Elige otro horario.');
         toast && toast('Horario ya no disponible');
       } else if (err.code === '22023') {
-        submitError[1]('Algunos datos no son válidos. Revisa nombre, correo y teléfono.');
+        submitError[1]('Algunos datos no son válidos. Revisa tu nombre y teléfono.');
       } else {
         submitError[1]('No pudimos completar la reserva. Intenta de nuevo.');
       }
@@ -260,7 +259,6 @@ function BookingV2(props) {
             )}
             <div className="lv-formcol">
               <FieldV label="Nombre completo" value={name[0]} onChange={name[1]} placeholder="Tu nombre" autoFocus={!name[0]} />
-              <FieldV label="Correo electrónico" value={email[0]} onChange={email[1]} placeholder="tu@correo.com" type="email" inputMode="email" />
               <FieldV label="WhatsApp" value={phone[0]} onChange={phone[1]} placeholder="55 0000 0000" inputMode="tel" />
             </div>
             <GlassBtn full disabled={!isContactValid()} onClick={goPayment}>

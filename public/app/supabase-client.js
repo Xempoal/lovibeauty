@@ -139,7 +139,7 @@
         p_booking_date:      params.date,
         p_start_time:        params.startTime,
         p_full_name:         params.fullName,
-        p_email:             params.email,
+        p_email:             params.email || null,
         p_phone:             params.phone,
         p_payment_method:    params.paymentMethod || 'transfer',
         p_notes:             params.notes || null,

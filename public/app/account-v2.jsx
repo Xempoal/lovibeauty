@@ -31,9 +31,6 @@ function AuthScreenV(props) {
         <button type="button" className="lv-linkbtn" onClick={function() { mode[1](mode[0] === 'login' ? 'register' : 'login'); err[1](''); }}>
           {mode[0] === 'login' ? '¿No tienes cuenta? Créala aquí' : '¿Ya tienes cuenta? Inicia sesión'}
         </button>
-        {mode[0] === 'login' && (
-          <p className="lv-demo-hint">Demo: <code>maria@demo.mx</code> / <code>demo123</code></p>
-        )}
       </form>
     </SheetV>
   );
@@ -57,6 +54,23 @@ function MyAppointmentsV(props) {
           <h2>Mis citas</h2>
         </div>
         <button className="lv-linkbtn" onClick={props.onLogout}>Cerrar sesión</button>
+      </div>
+
+      <h3 className="lv-sec">Tarjeta de lealtad</h3>
+      <div className="lv-loyalty">
+        <div className="lv-loyalty-top">
+          <div>
+            <strong>LoviBeauty Club</strong>
+            <span>Junta sellos con cada visita y gana premios</span>
+          </div>
+          <span className="lv-loyalty-soon">Muy pronto</span>
+        </div>
+        <div className="lv-loyalty-stamps" aria-hidden="true">
+          {[0,1,2,3,4,5,6,7].map(function(i) {
+            return <span key={i} className="lv-loyalty-stamp">{i === 7 ? '🎁' : '♥'}</span>;
+          })}
+        </div>
+        <p className="lv-loyalty-note">Estamos preparando tu tarjeta. Tus visitas ya cuentan 💕</p>
       </div>
 
       <h3 className="lv-sec">Próximas</h3>
