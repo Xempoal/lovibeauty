@@ -372,6 +372,34 @@
   }
   textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(164,54,90,0.1); }
 
+  /* ── lealtad (escáner) ── */
+  .scanbox {
+    display: none; border-radius: 16px; overflow: hidden; background: #000;
+    margin-bottom: 12px; border: 1px solid var(--line);
+  }
+  .scanbox.on { display: block; }
+  .scanbox video { display: block; width: 100% !important; }
+  .loy-stamps { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 2px; }
+  .loy-dot {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px dashed var(--line); font-family: var(--numeral);
+    font-size: 12.5px; font-weight: 700; color: var(--muted);
+  }
+  .loy-dot.gift { border-style: solid; border-color: var(--gold); }
+  .loy-dot.on {
+    background: linear-gradient(135deg, var(--primary), var(--primary-deep));
+    color: #fff; border: none; box-shadow: 0 5px 12px -4px rgba(126, 35, 66, 0.5);
+  }
+  .loy-reward {
+    margin-top: 12px; padding: 12px 14px; border-radius: 14px;
+    background: var(--ok-bg); color: var(--ok); font-weight: 600; font-size: 14px;
+  }
+  .loy-cycle {
+    margin-top: 8px; padding: 10px 14px; border-radius: 14px;
+    background: var(--info-bg); color: var(--info); font-size: 13px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
@@ -379,6 +407,7 @@
 </head>
 <body>
 <div id="app"></div>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -526,7 +555,7 @@
   // ══════════════════════════════════════════════════════════════
   function renderShell() {
     clear(app);
-    var tabsDef = [["hoy", "Hoy"], ["cancelaciones", "Cancelaciones"], ["bloqueos", "Bloqueos"], ["catalogo", "Catálogo"], ["config", "Configuración"]];
+    var tabsDef = [["hoy", "Hoy"], ["lealtad", "Lealtad"], ["cancelaciones", "Cancelaciones"], ["bloqueos", "Bloqueos"], ["catalogo", "Catálogo"], ["config", "Configuración"]];
     var tabBar = h("div", { class: "tabs" }, tabsDef.map(function (t) {
       var children = [t[1]];
       if (t[0] === "cancelaciones" && cancelCount > 0) children.push(h("span", { class: "dot" }, [String(cancelCount)]));
@@ -550,6 +579,7 @@
     app.appendChild(wrap);
 
     if (tab === "hoy") renderHoy(main);
+    else if (tab === "lealtad") renderLealtad(main);
     else if (tab === "cancelaciones") renderCancelaciones(main);
     else if (tab === "bloqueos") renderBloqueos(main);
     else if (tab === "catalogo") renderCatalogo(main);
@@ -608,7 +638,7 @@
         h("span", { class: "time" }, [fmtTime(b.start_time)]),
         h("div", { class: "mid" }, [
           h("strong", {}, [b.customer_name]),
-          h("span", {}, [(b.option_name || b.service_name || "Servicio") + " · " + b.phone]),
+          h("span", {}, [(b.option_name || b.service_name || "Servicio") + " · " + b.phone + (b.staff_name ? " · 💄 " + b.staff_name : "")]),
         ]),
         h("span", { class: "badge b-" + b.status }, [STATUS_LABEL[b.status] || b.status]),
       ]);
@@ -646,6 +676,25 @@
       catch (e) { toast(e.message); }
     }
 
+    // ── ¿Quién la atenderá? (opcional, visible para la clienta) ──
+    var staffI = h("input", { type: "text", value: b.staff_name || "", placeholder: "Ej. Karla (opcional)", style: "flex:1;min-width:0" });
+    var staffBtn = h("button", { class: "btn btn-soft btn-sm", style: "width:auto;flex-shrink:0" }, ["Guardar"]);
+    staffBtn.addEventListener("click", async function () {
+      var name = staffI.value.trim();
+      staffBtn.disabled = true; staffBtn.textContent = "…";
+      try {
+        await api("/bookings/" + b.id, { method: "PATCH", body: { staff_name: name } });
+        b.staff_name = name || null;
+        toast(name ? "La atenderá " + name + " ✓" : "Asignación quitada ✓");
+        renderHoy(main);
+      } catch (e) { toast(e.message); }
+      finally { staffBtn.disabled = false; staffBtn.textContent = "Guardar"; }
+    });
+    body.push(h("div", { class: "field", style: "margin-top:14px" }, [
+      h("label", {}, ["¿Quién la atenderá? La clienta lo verá en su cita"]),
+      h("div", { style: "display:flex;gap:8px" }, [staffI, staffBtn]),
+    ]));
+
     if (b.phone) {
       actions.appendChild(h("a", { class: "btn btn-whats", href: waLink(b.phone, "Hola " + b.customer_name + " 💕, te escribo de LoviBeauty sobre tu cita."), target: "_blank", rel: "noopener" }, ["WhatsApp a la clienta"]));
     }
@@ -661,6 +710,135 @@
 
     body.push(actions);
     close = modal("Cita", body);
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  TAB: LEALTAD (escanear tarjeta y sumar visita)
+  // ══════════════════════════════════════════════════════════════
+  var LOYALTY_REWARDS = {
+    3: "10% de descuento en su servicio",
+    6: "Promo: pedicure + polish por $350",
+    8: "Facial GRATIS · tarjeta completada",
+  };
+
+  var activeScanner = null;
+  async function stopScanner() {
+    if (!activeScanner) return;
+    var s = activeScanner;
+    activeScanner = null;
+    try { await s.stop(); s.clear(); } catch (e) { /* camera already stopped */ }
+  }
+
+  function renderLealtad(main) {
+    clear(main);
+
+    var resultBox = h("div", {}, []);
+    var err = h("div", { class: "err", style: "min-height:0" }, []);
+    var lastCode = null, lastAt = 0, busy = false;
+
+    async function registerVisit(code) {
+      code = String(code || "").replace(/\D/g, "");
+      if (!code) { err.textContent = "Escribe o escanea el código de la tarjeta."; return; }
+      // Ignore the same barcode re-detected by the camera within a few seconds.
+      var now = Date.now();
+      if (busy || (code === lastCode && now - lastAt < 5000)) return;
+      lastCode = code; lastAt = now; busy = true;
+      err.textContent = "";
+      try {
+        var res = await api("/loyalty/scan", { method: "POST", body: { code: code } });
+        await stopScanner();
+        camBtn.textContent = "📷 Escanear con cámara";
+        scanRegion.classList.remove("on");
+        showResult(res.card);
+        toast("Visita registrada ✓");
+      } catch (e) {
+        err.textContent = e.message;
+      } finally {
+        busy = false;
+      }
+    }
+
+    function showResult(card) {
+      clear(resultBox);
+      var dots = h("div", { class: "loy-stamps" }, [1,2,3,4,5,6,7,8].map(function (n) {
+        return h("span", { class: "loy-dot" + (LOYALTY_REWARDS[n] ? " gift" : "") + (n <= card.visits ? " on" : "") }, [String(n)]);
+      }));
+      var nodes = [
+        h("div", { style: "display:flex;justify-content:space-between;gap:10px;align-items:flex-start" }, [
+          h("div", {}, [
+            h("strong", { style: "font-size:16px" }, [card.full_name || "Clienta"]),
+            h("div", { style: "font-size:12.5px;color:var(--muted)" }, ["Tarjeta " + card.card_code + " · " + card.total_visits + " visita" + (card.total_visits === 1 ? "" : "s") + " en total"]),
+          ]),
+          h("span", { class: "badge b-confirmed" }, ["Visita " + card.visits + " de 8"]),
+        ]),
+        dots,
+      ];
+      if (LOYALTY_REWARDS[card.visits]) {
+        nodes.push(h("div", { class: "loy-reward" }, ["🎉 ¡Premio desbloqueado! " + LOYALTY_REWARDS[card.visits]]));
+      }
+      if (card.new_cycle) {
+        nodes.push(h("div", { class: "loy-cycle" }, ["Su tarjeta anterior quedó completada: este sello inicia una tarjeta nueva."]));
+      }
+      resultBox.appendChild(h("div", { class: "sec" }, ["Última visita registrada"]));
+      resultBox.appendChild(h("div", { class: "card" }, nodes));
+    }
+
+    // ── cámara ──
+    var scanRegion = h("div", { class: "scanbox", id: "lb-scan-region" }, []);
+    var camBtn = h("button", { class: "btn btn-primary" }, ["📷 Escanear con cámara"]);
+    camBtn.addEventListener("click", async function () {
+      if (activeScanner) {
+        await stopScanner();
+        camBtn.textContent = "📷 Escanear con cámara";
+        scanRegion.classList.remove("on");
+        return;
+      }
+      if (!window.Html5Qrcode) { err.textContent = "El lector no cargó. Revisa tu conexión y recarga."; return; }
+      err.textContent = "";
+      camBtn.disabled = true; camBtn.textContent = "Abriendo cámara…";
+      scanRegion.classList.add("on");
+      var scanner = new Html5Qrcode("lb-scan-region", {
+        formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128],
+        verbose: false,
+      });
+      try {
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 260, height: 140 } },
+          function (decoded) { registerVisit(decoded); },
+          function () { /* per-frame decode misses: ignore */ }
+        );
+        activeScanner = scanner;
+        camBtn.textContent = "Detener cámara";
+      } catch (e) {
+        scanRegion.classList.remove("on");
+        camBtn.textContent = "📷 Escanear con cámara";
+        err.textContent = "No pudimos abrir la cámara. Da permiso de cámara o escribe el código a mano.";
+      } finally {
+        camBtn.disabled = false;
+      }
+    });
+
+    // ── código manual ──
+    var codeI = h("input", { type: "tel", inputmode: "numeric", placeholder: "Código de la tarjeta (10 dígitos)", autocomplete: "off" });
+    codeI.addEventListener("keydown", function (e) { if (e.key === "Enter") registerVisit(codeI.value); });
+    var manualBtn = h("button", { class: "btn btn-soft" }, ["Registrar visita"]);
+    manualBtn.addEventListener("click", function () { registerVisit(codeI.value); });
+
+    main.appendChild(h("div", { class: "sec" }, ["Sumar visita"]));
+    main.appendChild(h("div", { class: "card" }, [
+      h("p", { style: "font-size:13px;color:var(--muted);margin-bottom:12px" }, [
+        "Escanea el código de barras de la tarjeta de lealtad de la clienta (está en su sección “Mis citas”) o escribe el código a mano. Cada escaneo suma un sello. Premios: visita 3 = 10% de descuento · visita 6 = pedicure + polish $350 · visita 8 = facial gratis.",
+      ]),
+      scanRegion,
+      camBtn,
+      h("div", { style: "display:flex;gap:8px;margin-top:10px" }, [
+        h("div", { style: "flex:1" }, [h("label", { class: "field", style: "margin:0" }, [codeI])]),
+        h("div", { style: "flex-shrink:0;display:flex" }, [manualBtn]),
+      ]),
+      err,
+    ]));
+    main.appendChild(resultBox);
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -680,7 +858,7 @@
     var reqs = res.requests || [];
     cancelCount = reqs.length;
     // refresh the tab badge
-    var badgeTab = document.querySelectorAll(".tab")[1];
+    var badgeTab = document.querySelectorAll(".tab")[2];
     if (badgeTab) renderShellBadge();
 
     if (reqs.length === 0) { main.appendChild(h("div", { class: "empty" }, ["No hay solicitudes de cancelación."])); return; }
@@ -1340,10 +1518,10 @@
   // keep the cancelaciones badge in sync after a fetch
   function renderShellBadge() {
     var tabsDef = document.querySelectorAll(".tabs .tab");
-    if (tabsDef[1]) {
-      var existing = tabsDef[1].querySelector(".dot");
+    if (tabsDef[2]) {
+      var existing = tabsDef[2].querySelector(".dot");
       if (existing) existing.remove();
-      if (cancelCount > 0) tabsDef[1].appendChild(h("span", { class: "dot" }, [String(cancelCount)]));
+      if (cancelCount > 0) tabsDef[2].appendChild(h("span", { class: "dot" }, [String(cancelCount)]));
     }
   }
 
@@ -1355,6 +1533,7 @@
 
   // ─── root render ───
   function render() {
+    stopScanner();
     if (!authed()) { renderLogin(); return; }
     renderShell();
     if (tab !== "cancelaciones") prefetchCounts();

@@ -451,7 +451,7 @@ function AppV() {
               />
             )}
             {view[0] === 'cuenta' && user && (
-              <MyAppointmentsV db={db[0]} user={user} requestCancel={requestCancel}
+              <MyAppointmentsV user={user} toast={toast} businessConfig={businessConfig[0]}
                 onBook={function() { view[1]('home'); }} onLogout={logout} />
             )}
             {view[0] === 'cuenta' && !user && (

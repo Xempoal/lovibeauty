@@ -167,5 +167,27 @@
       if (error) throw error;
       return data;
     },
+
+    // Loyalty card for a registered user. Upserts the customer by email and
+    // returns { card_code, visits, total_visits } (creates the card on first use).
+    async getLoyaltyCard(email, fullName, phone) {
+      const { data, error } = await sb.rpc('get_or_create_loyalty_card', {
+        p_email: email,
+        p_full_name: fullName || null,
+        p_phone: phone || null,
+      });
+      if (error) throw error;
+      return Array.isArray(data) ? data[0] : data;
+    },
+
+    // Real "Mis citas": every booking tied to this email, newest first.
+    // Each row includes staff_name (who will attend) when the admin set it.
+    async getMyBookings(email) {
+      const { data, error } = await sb.rpc('get_customer_bookings', {
+        p_email: email,
+      });
+      if (error) throw error;
+      return data || [];
+    },
   };
 })();

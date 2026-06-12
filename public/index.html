@@ -284,22 +284,68 @@
   .lv-loyalty-top > div { display: flex; flex-direction: column; gap: 2px; }
   .lv-loyalty-top strong { font-family: var(--display); font-style: italic; font-size: 22px; letter-spacing: 0.01em; }
   .lv-loyalty-top span { font-size: 12.5px; opacity: 0.85; }
-  .lv-loyalty-soon {
+  .lv-loyalty-count {
     flex-shrink: 0; margin-right: 18px;
-    font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
-    padding: 6px 12px; border-radius: 999px;
-    background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.35);
+    font-family: var(--display); font-size: 24px; font-weight: 700; line-height: 1;
+    padding: 8px 14px; border-radius: 16px;
+    background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.32);
     backdrop-filter: blur(6px);
   }
-  .lv-loyalty-stamps { display: flex; gap: 8px; flex-wrap: wrap; }
-  .lv-loyalty-stamp {
-    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    border: 1.5px dashed rgba(255, 255, 255, 0.45);
-    color: rgba(255, 255, 255, 0.55); font-size: 15px;
-  }
-  .lv-loyalty-stamp:last-child { border-style: solid; border-color: var(--gold); background: rgba(255, 255, 255, 0.12); }
+  .lv-loyalty-count em { font-style: normal; font-size: 13px; opacity: 0.8; }
   .lv-loyalty-note { font-size: 12px; opacity: 0.8; }
+
+  /* stamps: 8 visitas, premios en 3 / 6 / 8 */
+  .lv-loy-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .lv-loy-stamp {
+    position: relative; aspect-ratio: 1; border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    border: 1.6px dashed rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.75);
+    transition: background 0.35s var(--ease), transform 0.35s var(--ease-elastic);
+  }
+  .lv-loy-stamp .lv-loy-n { font-family: var(--display); font-size: 17px; font-weight: 700; line-height: 1; }
+  .lv-loy-stamp .lv-loy-tag {
+    font-size: 8.5px; font-weight: 700; letter-spacing: 0.08em; line-height: 1;
+    padding: 2px 6px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+  }
+  .lv-loy-stamp.reward { border-style: solid; border-color: var(--gold); background: rgba(255, 255, 255, 0.1); }
+  .lv-loy-stamp.on {
+    background: #fff; color: var(--primary); border: 1.6px solid #fff;
+    box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.35);
+  }
+  .lv-loy-stamp.on .lv-loy-tag { background: var(--primary-soft); color: var(--primary-deep); }
+  .lv-loy-check {
+    position: absolute; top: -5px; right: -3px; font-style: normal; font-size: 12px;
+    width: 19px; height: 19px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--gold); color: #fff; box-shadow: 0 3px 8px -2px rgba(0, 0, 0, 0.4);
+    animation: pop-stamp 0.45s var(--ease-elastic) both;
+  }
+  @keyframes pop-stamp { from { transform: scale(0); } to { transform: scale(1); } }
+
+  .lv-loy-legend { display: flex; flex-direction: column; gap: 5px; }
+  .lv-loy-leg {
+    display: flex; align-items: center; gap: 8px; font-size: 12px; opacity: 0.85;
+  }
+  .lv-loy-leg.on { opacity: 1; }
+  .lv-loy-leg-n {
+    flex-shrink: 0; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  .lv-loy-leg i { font-style: normal; color: var(--gold); font-weight: 700; }
+
+  .lv-loy-barwrap {
+    background: #fff; border-radius: 16px; padding: 12px 14px 9px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    box-shadow: inset 0 0 0 1px rgba(126, 35, 66, 0.08);
+  }
+  .lv-loy-barcode { width: 100%; max-width: 280px; height: 56px; }
+  .lv-loy-code {
+    font-family: var(--numeral); font-size: 12px; letter-spacing: 0.42em;
+    color: var(--primary-deep); margin-right: -0.42em;
+  }
+  .lv-loy-hint { font-size: 10.5px; color: #8A6E73; text-align: center; }
 
   /* ------------- MARQUEE ------------- */
   .lv-marquee {
@@ -936,7 +982,7 @@
     .lv-marquee-seg span { font-size: 20px; padding: 0 20px; }
 
     .lv-loyalty { padding: 26px 26px 20px; }
-    .lv-loyalty-stamp { width: 44px; height: 44px; font-size: 17px; }
+    .lv-loy-grid { grid-template-columns: repeat(8, 1fr); }
 
     .lv-foot-section { padding: 32px; width: 100%; max-width: 1200px; margin: 0 auto; }
     .lv-foot-card { padding: 28px; }
@@ -972,6 +1018,7 @@
 <body>
 <div id="root"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.12.1/dist/JsBarcode.all.min.js"></script>
 <script src="app/supabase-client.js"></script>
 <script type="text/babel" src="ios-frame.jsx"></script>
 <script type="text/babel" src="app/store-v2.jsx"></script>

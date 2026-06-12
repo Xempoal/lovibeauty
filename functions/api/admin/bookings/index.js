@@ -7,7 +7,7 @@ import { json, badRequest, serverError, requireAuth, sb } from '../_lib.js';
 
 const SELECT =
   'id,booking_date,start_time,end_time,status,payment_method,payment_status,' +
-  'payment_amount,payment_reference,notes,guest_name,guest_email,guest_phone,' +
+  'payment_amount,payment_reference,notes,staff_name,guest_name,guest_email,guest_phone,' +
   'created_at,admin_confirmed_at,' +
   'service_options(name,price,duration_minutes,services(name)),' +
   'customers(full_name,email,phone)';
@@ -27,6 +27,7 @@ function flatten(b) {
     payment_amount: b.payment_amount,
     payment_reference: b.payment_reference,
     notes: b.notes,
+    staff_name: b.staff_name,
     created_at: b.created_at,
     admin_confirmed_at: b.admin_confirmed_at,
     service_name: svc.name || null,
