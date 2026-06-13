@@ -207,25 +207,18 @@ function HomeV(props) {
 
         <a className="lv-loc-card" href="https://maps.app.goo.gl/hhXUwun8VXENNVuw5" target="_blank" rel="noopener">
           <span className="lv-loc-ic">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.8"/></svg>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M9 4v14M15 6v14" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/></svg>
           </span>
           <span className="lv-loc-body">
-            <strong>Estamos en Xalapa</strong>
-            <span>Toca para abrir la ubicación en el mapa</span>
+            <strong>¿No sabes cómo llegar?</strong>
+            <span>Toca y te abrimos la ubicación en el mapa</span>
           </span>
-          <span className="lv-loc-btn">Cómo llegar</span>
+          <svg className="lv-loc-arrow" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </a>
 
         <div className="lv-powered">
           <a className="lv-powered-link" href="https://borenstudio.com" target="_blank" rel="noopener">
             Powered by <strong>Boren Studio</strong>
-          </a>
-          <a className="lv-ig" href="https://www.instagram.com/boren.studio" target="_blank" rel="noopener" aria-label="Instagram de Boren Studio">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-              <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="currentColor" strokeWidth="1.8"/>
-              <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="1.8"/>
-              <circle cx="17.4" cy="6.6" r="1.3" fill="currentColor"/>
-            </svg>
           </a>
         </div>
       </section>

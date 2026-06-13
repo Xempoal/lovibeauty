@@ -425,26 +425,26 @@
 
   /* ------------- LOCATION CARD ------------- */
   .lv-loc-card {
+    text-decoration: none; color: inherit;
     background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(10px);
     border: 1px solid var(--line); border-radius: var(--radius);
-    padding: 16px 18px; max-width: 540px; margin: 12px auto 0; width: 100%;
+    padding: 15px 16px; max-width: 540px; margin: 12px auto 0; width: 100%;
     display: flex; align-items: center; gap: 14px; text-align: left;
-    transition: transform 0.15s var(--ease), box-shadow 0.2s var(--ease);
+    transition: transform 0.15s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
   }
-  .lv-loc-card:hover { box-shadow: var(--shadow-card); transform: translateY(-1px); }
+  .lv-loc-card:hover { box-shadow: var(--shadow-card); transform: translateY(-1px); border-color: rgba(164, 54, 90, 0.28); }
+  .lv-loc-card:active { transform: scale(0.99); }
   .lv-loc-ic {
-    flex-shrink: 0; width: 46px; height: 46px; border-radius: 14px;
-    display: grid; place-items: center; background: var(--primary-soft); color: var(--primary);
+    flex-shrink: 0; width: 48px; height: 48px; border-radius: 15px;
+    display: grid; place-items: center; color: #fff;
+    background: linear-gradient(150deg, var(--primary), var(--primary-deep));
+    box-shadow: 0 8px 18px -8px rgba(126, 35, 66, 0.6);
   }
   .lv-loc-ic svg { width: 24px; height: 24px; }
   .lv-loc-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-  .lv-loc-body strong { font-size: 15.5px; color: var(--ink); }
+  .lv-loc-body strong { font-family: var(--display); font-weight: 600; font-size: 16px; color: var(--ink); }
   .lv-loc-body span { font-size: 12.5px; color: var(--muted); }
-  .lv-loc-btn {
-    flex-shrink: 0; padding: 9px 15px; border-radius: 999px; font-size: 13px; font-weight: 600;
-    background: var(--primary); color: #fff; white-space: nowrap;
-    box-shadow: 0 6px 16px -6px rgba(126, 35, 66, 0.5);
-  }
+  .lv-loc-arrow { flex-shrink: 0; width: 20px; height: 20px; color: var(--primary); opacity: 0.7; }
 
   /* ------------- WHATSAPP FLOATING BUTTON ------------- */
   .lv-wafab {
