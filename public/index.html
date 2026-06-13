@@ -667,47 +667,62 @@
   .lv-empty-slots p { font-size: 16px; margin-bottom: 4px; }
   .lv-empty-slots span { font-size: 13.5px; }
 
-  /* step 1 chosen card — boarding-pass ticket */
-  .lv-chosen-card {
+  /* step 1 — review card (premium) */
+  .lv-review {
     position: relative; overflow: hidden;
-    background: linear-gradient(150deg, #fff, var(--bg-warm));
-    border: 1px solid var(--line); border-radius: 24px; padding: 30px 22px 26px;
-    display: flex; flex-direction: column; gap: 20px; box-shadow: var(--shadow-card);
+    background: linear-gradient(165deg, #fff 0%, var(--bg-warm) 130%);
+    border: 1px solid var(--line); border-radius: 26px;
+    padding: 28px 24px 24px;
+    box-shadow: var(--shadow-card);
+    display: flex; flex-direction: column;
   }
-  .lv-chosen-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px;
-    background: linear-gradient(90deg, var(--gold), var(--accent), var(--primary), var(--accent), var(--gold));
-    background-size: 200% 100%;
-    animation: lv-foil 7s linear infinite;
+  .lv-review::before {
+    content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.7;
   }
-  @keyframes lv-foil { to { background-position: 200% 0; } }
-  .lv-chosen-top { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
-  .lv-chosen-emoji { font-size: 32px; }
-  .lv-chosen-top h2 { font-size: 28px; color: var(--ink); }
-  .lv-chosen-time {
-    font-family: var(--numeral); font-size: 48px; font-weight: 700; color: var(--primary); line-height: 1; letter-spacing: -0.02em;
+  .lv-review-eyebrow {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 9px;
   }
-  .lv-chosen-staff {
-    display: flex; align-items: center; gap: 12px;
-    padding: 14px 16px; background: rgba(255, 255, 255, 0.7); border-radius: 18px;
-    border: 1px solid var(--line);
+  .lv-review-date {
+    font-family: var(--display); font-size: 26px; font-weight: 600; color: var(--ink);
+    line-height: 1.15; letter-spacing: -0.01em;
+    padding-bottom: 18px; border-bottom: 1px solid var(--line);
   }
-  .lv-chosen-staff > div { display: flex; flex-direction: column; gap: 1px; }
-  .lv-chosen-staff strong { font-size: 17px; color: var(--ink); }
-  .lv-chosen-staff span { font-size: 13px; color: var(--muted); }
-  .lv-chosen-svc {
-    position: relative;
-    display: flex; justify-content: space-between; align-items: center;
-    padding-top: 16px; border-top: 1.5px dashed rgba(164, 54, 90, 0.35);
+  .lv-review-rows { display: flex; flex-direction: column; }
+  .lv-review-row {
+    display: flex; align-items: center; gap: 13px;
+    padding: 13px 0; border-bottom: 1px solid var(--line);
+    animation: lv-fadeup 0.5s var(--ease) both;
   }
-  .lv-chosen-svc::before, .lv-chosen-svc::after {
-    content: ''; position: absolute; top: -13px; width: 26px; height: 26px; border-radius: 50%;
-    background: var(--bg); box-shadow: inset 0 0 0 1px var(--line);
+  .lv-review-row:nth-child(1) { animation-delay: 0.04s; }
+  .lv-review-row:nth-child(2) { animation-delay: 0.10s; }
+  .lv-review-row:nth-child(3) { animation-delay: 0.16s; }
+  .lv-review-ic {
+    flex-shrink: 0; width: 42px; height: 42px; border-radius: 13px;
+    display: grid; place-items: center;
+    background: var(--primary-soft); color: var(--primary);
   }
-  .lv-chosen-svc::before { left: -35px; }
-  .lv-chosen-svc::after { right: -35px; }
-  .lv-chosen-svc span { color: var(--muted); font-size: 14.5px; }
-  .lv-chosen-svc strong { font-family: var(--numeral); font-size: 28px; font-weight: 700; color: var(--primary); letter-spacing: -0.01em; }
+  .lv-review-ic svg { width: 20px; height: 20px; }
+  .lv-review-rc { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .lv-review-rc em {
+    font-style: normal; font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .lv-review-rc strong {
+    font-size: 16.5px; font-weight: 600; color: var(--ink); line-height: 1.3;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .lv-review-total {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding-top: 17px;
+  }
+  .lv-review-total span { font-size: 13px; color: var(--muted); letter-spacing: 0.01em; }
+  .lv-review-total strong {
+    font-family: var(--numeral); font-size: 29px; font-weight: 700; color: var(--primary);
+    letter-spacing: -0.01em;
+  }
 
   /* loginhint */
   .lv-loginhint {

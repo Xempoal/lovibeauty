@@ -72,6 +72,7 @@ const fmtDateShortV = (s) => { const d = fromDateStrV(s); return d.getDate() + '
 const fmtDowV = (s) => { const d = fromDateStrV(s); return DOW_SHORT_V[d.getDay()]; };
 const fmtTimeV = (t) => { let [h, m] = t.split(':').map(Number); const ap = h >= 12 ? 'pm' : 'am'; h = h % 12 || 12; return h + ':' + pad2v(m) + ' ' + ap; };
 const fmtMoneyV = (n) => '$' + n.toLocaleString('es-MX');
+const capitalizeFirstV = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 const isOpenDayV = (ds) => !!HOURS_V2[fromDateStrV(ds).getDay()];
 
 const DB_KEY_V = 'lovibeauty_v2';
@@ -290,16 +291,30 @@ function googleCalUrlForBookingV(b) {
 }
 function downloadBookingICSV(b) {
   const t = bookingCalStampsV(b);
-  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//LoviBeauty//ES', 'BEGIN:VEVENT',
-    'UID:' + (b.id || t.start) + '@lovibeauty.mx', 'DTSTART:' + t.start, 'DTEND:' + t.end,
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//LoviBeauty//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'BEGIN:VEVENT', 'UID:' + (b.id || t.start) + '@lovibeauty.mx', 'DTSTAMP:' + stamp,
+    'DTSTART:' + t.start, 'DTEND:' + t.end,
     'SUMMARY:LoviBeauty — ' + b.service_option_name, 'DESCRIPTION:Cita en LoviBeauty Studio.',
-    'LOCATION:LoviBeauty Studio', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
-  const blob = new Blob([ics], { type: 'text/calendar' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'LoviBeauty-cita.ics';
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    'LOCATION:LoviBeauty Studio',
+    'BEGIN:VALARM', 'TRIGGER:-PT2H', 'ACTION:DISPLAY', 'DESCRIPTION:Recordatorio de tu cita en LoviBeauty', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  if (isIOSDeviceV()) {
+    // En iPhone/iPad navegar al blob abre directamente el Calendario de Apple.
+    window.location.href = url;
+  } else {
+    // Android/desktop: el .ics se entrega al sistema, que lo abre con la app
+    // de calendario (Google/Samsung Calendar) en lugar de una página web.
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'LoviBeauty-cita.ics';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 8000);
 }
 
 // Format a millisecond duration as M:SS (minutes:seconds).
@@ -314,7 +329,7 @@ function fmtCountdownV(ms) {
 Object.assign(window, {
   SERVICES_V2, CATEGORIES_V2, SPECIAL_CAT_V2, STAFF_V2, HOURS_V2, DEPOSIT_V2, BANK_V2, WHATS_NUM_V2, ADMIN_EMAIL_V2, ADMIN_PASS_V2,
   pad2v, toDateStrV, fromDateStrV, todayStrV, addDaysV, toMinV, toHHMMV, fmtDateV, fmtDateShortV, fmtDowV, fmtTimeV, fmtMoneyV,
-  DOW_V, DOW_SHORT_V, MONTHS_V, isOpenDayV,
+  DOW_V, DOW_SHORT_V, MONTHS_V, isOpenDayV, capitalizeFirstV,
   loadDBV, saveDBV, loadSessionV, saveSessionV, uidV, mkFolioV,
   getSlotsV, getAutoSlots, STATUS_META_V, googleCalUrlV, downloadICSV, whatsAppUrlV, svcV, staffOfV,
   computeFreeSlotsV, nextOpenDatesV, whatsBookingUrlV, fmtCountdownV,

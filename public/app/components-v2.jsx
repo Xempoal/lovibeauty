@@ -255,20 +255,16 @@ function ApptCardV(props) {
   );
 }
 
-// Botón "agregar a calendario" según el dispositivo: iPhone/iPad descarga un
-// .ics (Calendario de Apple); Android y desktop abren Google Calendar.
+// Botón "agregar a calendario". Genera un archivo .ics en todos los dispositivos
+// para que el sistema lo abra con la app de calendario nativa (Calendario de
+// Apple en iPhone/iPad, Google/Samsung Calendar en Android) en lugar de abrir
+// una página web. Es el comportamiento estándar de "añadir a calendario".
 function AddToCalendarBtnV(props) {
   var b = props.booking;
   var label = props.children || '+ Calendario';
-  if (isIOSDeviceV()) {
-    return React.createElement(GlassBtn, {
-      kind: props.kind || 'glass', small: props.small, full: props.full,
-      onClick: function() { downloadBookingICSV(b); }
-    }, label);
-  }
   return React.createElement(GlassBtn, {
     kind: props.kind || 'glass', small: props.small, full: props.full,
-    href: googleCalUrlForBookingV(b), target: '_blank'
+    onClick: function() { downloadBookingICSV(b); }
   }, label);
 }
 

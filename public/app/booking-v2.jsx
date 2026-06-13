@@ -228,17 +228,34 @@ function BookingV2(props) {
           </div>
         )}
 
-        {/* step 1: confirm chosen slot */}
+        {/* step 1: confirm chosen slot — review card premium */}
         {step[0] === 1 && slot[0] && (
           <div className="lv-step lv-step-center">
-            <div className="lv-chosen-card">
-              <div className="lv-chosen-top">
-                <span className="lv-chosen-emoji">📅</span>
-                <h2>{fmtDateV(date[0])}</h2>
-                <p className="lv-chosen-time">{fmtTimeV(slot[0].time)}</p>
+            <div className="lv-review">
+              <span className="lv-review-eyebrow">Confirma tu cita</span>
+              <h2 className="lv-review-date">{capitalizeFirstV(fmtDateV(date[0]))}</h2>
+              <div className="lv-review-rows">
+                <div className="lv-review-row">
+                  <span className="lv-review-ic">
+                    <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.7"/><path d="M12 7.5V12l3 2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </span>
+                  <div className="lv-review-rc"><em>Hora</em><strong>{fmtTimeV(slot[0].time)}</strong></div>
+                </div>
+                <div className="lv-review-row">
+                  <span className="lv-review-ic">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.8 4.7L18.5 9l-3.7 3 1.2 5-4-2.7L8 17l1.2-5L5.5 9l4.7-1.3L12 3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg>
+                  </span>
+                  <div className="lv-review-rc"><em>Servicio</em><strong>{serviceOption.name}</strong></div>
+                </div>
+                <div className="lv-review-row">
+                  <span className="lv-review-ic">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M7 3h10M7 21h10M8 3c0 4 8 5 8 9s-8 5-8 9" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </span>
+                  <div className="lv-review-rc"><em>Duración</em><strong>{durLabel}</strong></div>
+                </div>
               </div>
-              <div className="lv-chosen-svc">
-                <span>{serviceOption.name}</span>
+              <div className="lv-review-total">
+                <span>Total del servicio</span>
                 <strong>{fmtMoneyV(Number(serviceOption.price))}</strong>
               </div>
             </div>
