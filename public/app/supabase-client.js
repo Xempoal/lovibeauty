@@ -27,9 +27,13 @@
   // Keyed by service slug. Updating the row in Supabase wins automatically.
   const SERVICE_IMG_FALLBACK = {
     'unas':       'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=1000&q=80',
+    'mani-pedi':  'https://images.unsplash.com/photo-1519415943484-9fa1873496d4?w=1000&q=80',
+    'pestanas':   'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=1000&q=80',
+    'keratina':   'https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=1000&q=80',
+    'retiros':    'https://images.unsplash.com/photo-1610992015732-2449b76344bc?w=1000&q=80',
+    // Categorías 2025 (inactivas en el catálogo 2026, se conservan por si vuelven).
     'makeup':     'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=1000&q=80',
     'pedi-spa':   'https://images.unsplash.com/photo-1519415943484-9fa1873496d4?w=1000&q=80',
-    'keratina':   'https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=1000&q=80',
     'especiales': 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=1200&q=80',
   };
 

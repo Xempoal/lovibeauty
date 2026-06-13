@@ -1260,7 +1260,7 @@
 
   function openServiceForm(service, main) {
     var isNew = !service;
-    var nameI = h("input", { type: "text", value: service ? service.name : "", placeholder: "Uñas, Makeup…" });
+    var nameI = h("input", { type: "text", value: service ? service.name : "", placeholder: "Uñas, Pestañas…" });
     var descI = h("textarea", { placeholder: "Descripción corta" }, []);
     if (service && service.description) descI.value = service.description;
     var orderI = h("input", { type: "number", min: "1", value: service ? service.display_order : "" });
