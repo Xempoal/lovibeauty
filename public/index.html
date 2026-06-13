@@ -5,6 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
 <title>LoviBeauty — Tu momento de consentirte</title>
 <link rel="icon" href="assets/logo.png" />
+<link rel="apple-touch-icon" href="assets/logo.png" />
+<meta name="description" content="Uñas, pestañas, alaciados y más en LoviBeauty Studio (Xalapa). Agenda tu cita en menos de un minuto 💕" />
+<meta name="theme-color" content="#A4365A" />
+<!-- Vista previa al compartir el link (WhatsApp, Instagram, Facebook).
+     Si en el futuro usan un dominio propio, cambia las URLs de aquí. -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="LoviBeauty Studio" />
+<meta property="og:title" content="LoviBeauty Studio — Reserva tu cita" />
+<meta property="og:description" content="Uñas, pestañas, alaciados y más en Xalapa. Agenda tu cita en menos de un minuto 💕" />
+<meta property="og:url" content="https://lovibeauty.pages.dev/" />
+<meta property="og:image" content="https://lovibeauty.pages.dev/assets/logo.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="LoviBeauty Studio — Reserva tu cita" />
+<meta name="twitter:description" content="Uñas, pestañas, alaciados y más en Xalapa. Agenda tu cita en menos de un minuto 💕" />
+<meta name="twitter:image" content="https://lovibeauty.pages.dev/assets/logo.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600&amp;family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&amp;family=Inter:wght@300..700&amp;display=swap" rel="stylesheet" />
@@ -407,6 +422,63 @@
   }
   .lv-foot-eyebrow { font-family: var(--display); font-size: 20px; color: var(--primary); }
   .lv-foot-card p { color: var(--muted); font-size: 13.5px; }
+
+  /* ------------- LOCATION CARD ------------- */
+  .lv-loc-card {
+    background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(10px);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px 18px; max-width: 540px; margin: 12px auto 0; width: 100%;
+    display: flex; align-items: center; gap: 14px; text-align: left;
+    transition: transform 0.15s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  .lv-loc-card:hover { box-shadow: var(--shadow-card); transform: translateY(-1px); }
+  .lv-loc-ic {
+    flex-shrink: 0; width: 46px; height: 46px; border-radius: 14px;
+    display: grid; place-items: center; background: var(--primary-soft); color: var(--primary);
+  }
+  .lv-loc-ic svg { width: 24px; height: 24px; }
+  .lv-loc-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  .lv-loc-body strong { font-size: 15.5px; color: var(--ink); }
+  .lv-loc-body span { font-size: 12.5px; color: var(--muted); }
+  .lv-loc-btn {
+    flex-shrink: 0; padding: 9px 15px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    background: var(--primary); color: #fff; white-space: nowrap;
+    box-shadow: 0 6px 16px -6px rgba(126, 35, 66, 0.5);
+  }
+
+  /* ------------- WHATSAPP FLOATING BUTTON ------------- */
+  .lv-wafab {
+    position: fixed; z-index: 40;
+    right: 16px; bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    width: 56px; height: 56px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: #25D366; color: #fff;
+    box-shadow: 0 10px 26px -6px rgba(37, 211, 102, 0.6), 0 2px 8px rgba(0, 0, 0, 0.15);
+    animation: lv-wafab-in 0.4s var(--ease-elastic) both;
+    transition: transform 0.15s var(--ease-elastic);
+  }
+  .lv-wafab:active { transform: scale(0.92); }
+  .lv-wafab svg { width: 30px; height: 30px; position: relative; z-index: 1; }
+  .lv-wafab::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    animation: lv-wapulse 2.6s var(--ease) infinite;
+  }
+  @keyframes lv-wafab-in { from { opacity: 0; transform: scale(0.4) translateY(10px); } }
+  @keyframes lv-wapulse {
+    0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.45); }
+    70%, 100% { box-shadow: 0 0 0 16px rgba(37, 211, 102, 0); }
+  }
+
+  /* ------------- COPY VALUE (CLABE) ------------- */
+  .lv-copyval {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-weight: 500; color: var(--ink); cursor: pointer;
+    padding: 2px 8px; margin: -2px -8px; border-radius: 8px;
+    transition: background 0.15s var(--ease), color 0.15s var(--ease);
+  }
+  .lv-copyval:hover { background: var(--primary-soft); color: var(--primary); }
+  .lv-copyval:active { transform: scale(0.97); }
+  .lv-copyval svg { width: 14px; height: 14px; opacity: 0.55; }
 
   /* ------------- BUTTONS ------------- */
   .lv-btn {
@@ -1063,5 +1135,16 @@
 <script type="text/babel" src="app/account-v2.jsx"></script>
 <script type="text/babel" src="app/admin-v2.jsx"></script>
 <script type="text/babel" src="app/app-v2.jsx"></script>
+
+<!-- ───────────────────────────────────────────────────────────────────────
+  CONTADOR DE VISITAS (Cloudflare Web Analytics) — gratis y sin rastrear gente.
+  Dos formas de activarlo (elige una):
+   A) Más fácil, sin tocar código: en Cloudflare → Web Analytics → "Add a site",
+      elige el proyecto de Pages y actívalo. Cloudflare inyecta el contador solo.
+   B) Manual: copia tu token desde Cloudflare → Web Analytics y pégalo abajo,
+      luego quita los comentarios de estas líneas:
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon='{"token": "PEGA_AQUI_TU_TOKEN"}'></script>
+─────────────────────────────────────────────────────────────────────────── -->
 </body>
 </html>

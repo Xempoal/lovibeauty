@@ -172,6 +172,22 @@ function BookingV2(props) {
     }
   }
 
+  function copyText(text, okMsg) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(String(text));
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = String(text); ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        document.execCommand('copy'); ta.remove();
+      }
+      toast && toast(okMsg || 'Copiado ✓');
+    } catch (e) {
+      toast && toast('No se pudo copiar');
+    }
+  }
+
   function pickAnotherSlot() {
     confirmed[1](null);
     submitError[1](null);
@@ -214,7 +230,12 @@ function BookingV2(props) {
             <div className="lv-bankbox compact">
               <div className="lv-bankrow"><em>Banco</em><span>{bankName}</span></div>
               <div className="lv-bankrow"><em>Titular</em><span>{bankHolder}</span></div>
-              <div className="lv-bankrow"><em>CLABE</em><span>{bankClabe}</span></div>
+              <div className="lv-bankrow"><em>CLABE</em>
+                <button type="button" className="lv-copyval" onClick={function() { copyText(bankClabe, 'CLABE copiada ✓'); }}>
+                  {bankClabe}
+                  <svg viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.8"/><path d="M5 15V5a2 2 0 0 1 2-2h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                </button>
+              </div>
               <div className="lv-bankrow"><em>Anticipo</em><span>{fmtMoneyV(DEPOSIT_V2)}</span></div>
             </div>
 
@@ -346,7 +367,12 @@ function BookingV2(props) {
                 <div className="lv-bankbox">
                   <div className="lv-bankrow"><em>Banco</em><span>{bankName}</span></div>
                   <div className="lv-bankrow"><em>Titular</em><span>{bankHolder}</span></div>
-                  <div className="lv-bankrow"><em>CLABE</em><span>{bankClabe}</span></div>
+                  <div className="lv-bankrow"><em>CLABE</em>
+                <button type="button" className="lv-copyval" onClick={function() { copyText(bankClabe, 'CLABE copiada ✓'); }}>
+                  {bankClabe}
+                  <svg viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.8"/><path d="M5 15V5a2 2 0 0 1 2-2h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                </button>
+              </div>
                   <div className="lv-bankrow"><em>Monto</em><span>{fmtMoneyV(DEPOSIT_V2)}</span></div>
                 </div>
                 <p className="lv-paynote small">

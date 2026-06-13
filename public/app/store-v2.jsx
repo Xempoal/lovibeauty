@@ -52,7 +52,7 @@ const STAFF_V2 = [
 
 const HOURS_V2 = { 0: null, 1: [9, 20], 2: [9, 20], 3: [9, 20], 4: [9, 20], 5: [9, 20], 6: [9, 18] };
 const DEPOSIT_V2 = 100;
-const WHATS_NUM_V2 = '5215522334455';
+const WHATS_NUM_V2 = '522281070201';
 const BANK_V2 = { banco: 'BBVA', titular: 'LoviBeauty Studio', clabe: '0121 8000 1234 5678 90', tarjeta: '4152 3134 5678 9012' };
 const ADMIN_EMAIL_V2 = 'admin@lovibeauty.mx';
 const ADMIN_PASS_V2 = 'lovi2026';

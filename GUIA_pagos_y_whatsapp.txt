@@ -1,0 +1,188 @@
+================================================================
+  LOVIBEAUTY - GUIA SUPER SENCILLA
+  Cobrar con tarjeta  +  Avisos por WhatsApp
+  (explicado facil, sin tecnicismos)
+================================================================
+
+Hola :) Este documento te explica DOS cosas:
+
+  1) Como prender el cobro con tarjeta (ejemplo: Mercado Pago).
+  2) Como funcionan los avisos por WhatsApp y quien manda el mensaje.
+
+Imagina todo esto como una tienda. Vamos paso a paso.
+
+
+================================================================
+PARTE 1 — COBRAR CON TARJETA (Mercado Pago, Stripe o PayPal)
+================================================================
+
+¿QUE ES UNA "PASARELA DE PAGO"?
+-------------------------------
+Es como la cajera del super que pasa las tarjetas.
+Tu sitio web NO guarda tarjetas ni dinero. Lo que hace es:
+
+   La clienta pica "Pagar con tarjeta"
+        |
+        v
+   La mandamos un ratito a la pagina de Mercado Pago (la cajera)
+        |
+        v
+   Ahi mete su tarjeta y paga
+        |
+        v
+   Regresa a tu sitio y su cita queda CONFIRMADA sola. ✨
+
+Tu nunca ves la tarjeta de la clienta. El dinero cae en tu
+cuenta de Mercado Pago, y de ahi tu lo pasas a tu banco.
+
+
+LO BUENO: YA ESTA TODO LISTO POR DENTRO
+---------------------------------------
+La parte dificil (la programacion) ya quedo hecha y guardada.
+Hoy esta "apagada" a proposito. Para prenderla solo falta
+ponerle las "llaves" de Mercado Pago. Nada mas.
+
+Piensa que el motor del coche ya esta armado; solo falta
+meter la llave y arrancar.
+
+
+¿QUE TENDRIAS QUE HACER TU? (4 PASITOS)
+---------------------------------------
+PASO 1 — Abrir cuenta de Mercado Pago (de negocio).
+   Entras a mercadopago.com.mx, creas tu cuenta como negocio
+   (con tus datos / los del estudio). Es gratis.
+
+PASO 2 — Sacar tu "llave secreta".
+   Dentro de Mercado Pago hay una seccion de "credenciales".
+   Ahi te dan una especie de contrasena larga (se llama
+   "Access Token"). Es como la llave de la caja registradora.
+   *** No se la mandes a nadie por mensaje normal, es secreta. ***
+
+PASO 3 — Pasarmela a mi (o a quien maneje el sitio).
+   Tu me das esa llave de forma segura y yo la "pego" en el
+   lugar correcto del sitio (en un panel privado, NO en la
+   pagina que ve la gente). Tambien prendo el interruptor.
+
+PASO 4 — Probamos juntos.
+   Hacemos una compra de prueba para ver que todo jale: que
+   cobre, que la cita se confirme sola y que el dinero llegue.
+   Cuando todo sale bien... ¡listo! Ya cobras con tarjeta. 🎉
+
+
+¿Y SI EN VEZ DE MERCADO PAGO QUIERO STRIPE O PAYPAL?
+----------------------------------------------------
+Es exactamente lo mismo. Cada una te da su "llave secreta",
+me la pasas, la pego, y prende. Solo se usa UNA a la vez
+(la que tu prefieras).
+
+
+COSAS BUENAS QUE YA QUEDARON RESUELTAS (no te preocupes por esto)
+----------------------------------------------------------------
+- Si la clienta paga, su cita se confirma SOLITA.
+- Si Mercado Pago avisa dos veces lo mismo, NO se cobra doble.
+- Puedes elegir cobrar SOLO el anticipo ($100) o el TOTAL.
+- Mientras no prendamos esto, el sitio sigue funcionando
+  igual que hoy: la clienta paga por transferencia. No se
+  rompe nada.
+
+
+LO UNICO A TENER EN CUENTA (lo justo y necesario)
+-------------------------------------------------
+- Mercado Pago (igual que Stripe y PayPal) te cobra una
+  pequena comision por cada venta. Eso lo define ellos, no
+  el sitio. Lo ves en su pagina.
+- Necesitas tu cuenta verificada para que te depositen.
+
+
+================================================================
+PARTE 2 — AVISOS POR WHATSAPP
+================================================================
+
+Aqui la pregunta clave es:
+  ¿Quien aprieta "enviar" en WhatsApp? ¿Una persona o un robot?
+
+Hay DOS formas. Te explico las dos.
+
+
+-------------------------------------------------
+FORMA A — SIN API (gratis, pero alguien pica enviar)
+-------------------------------------------------
+Asi funciona HOY el sitio.
+
+El sitio prepara el mensaje YA ESCRITO y abre WhatsApp.
+Pero el ultimo "enviar" lo da una PERSONA con su dedo.
+
+Ejemplo de como esta hoy:
+   - La clienta aparta su cita.
+   - El sitio le abre WhatsApp con un mensaje ya listo tipo:
+     "Hola, reserve mi cita de Unas el viernes... aqui esta
+      mi comprobante."
+   - La CLIENTA pica enviar y te llega a TU WhatsApp del estudio.
+
+   O sea: en esta forma, quien manda es la persona (la clienta,
+   o tu si tu abres el chat). El sitio solo deja el mensaje
+   escrito para no batallar.
+
+   VENTAJA: es gratis y ya funciona.
+   DESVENTAJA: no es automatico al 100%, siempre alguien
+   tiene que dar "enviar".
+
+
+-------------------------------------------------
+FORMA B — CON API (automatico, pero tiene costo)
+-------------------------------------------------
+Aqui un "robot" manda el WhatsApp SOLO, sin que nadie pique nada.
+
+Ejemplo de como se sentiria:
+   - La clienta aparta o paga su cita.
+   - Le llega solita a SU WhatsApp:
+     "Hola Sofi! Tu cita en LoviBeauty quedo confirmada para
+      el viernes 2:00 pm. Te esperamos! 💖"
+   - Y a ti tambien te puede llegar un aviso de "nueva cita".
+
+¿Quien manda ese mensaje?
+   Un numero OFICIAL de WhatsApp Business del estudio (el
+   robot escribe desde ese numero). No es tu numero personal.
+
+¿Que se necesita para tener el robot?
+   1) Una cuenta de "WhatsApp Business Platform" (es de Meta,
+      los duenos de WhatsApp).
+   2) Un ayudante intermediario (empresas como Twilio,
+      360dialog, etc.) que es quien conecta el sitio con
+      WhatsApp.
+   3) Que Meta apruebe los mensajitos (las "plantillas"),
+      por ejemplo el de "tu cita quedo confirmada". Es un
+      tramite, tardan un poquito en aprobarlo.
+   4) Tiene un costo: normalmente pagas una pequena cantidad
+      por cada mensaje o un plan mensual. Lo define el
+      intermediario y Meta.
+
+   VENTAJA: 100% automatico, se ve muy profesional.
+   DESVENTAJA: cuesta y hay que hacer un tramite de permiso.
+
+
+-------------------------------------------------
+RESUMEN RAPIDO DE QUIEN MANDA EL MENSAJE
+-------------------------------------------------
+   SIN API  ->  lo manda una PERSONA (con el mensaje ya escrito).
+   CON API  ->  lo manda un ROBOT desde el WhatsApp del estudio.
+
+
+================================================================
+¿QUE SIGUE? (tu decides, no hay prisa)
+================================================================
+
+Para PAGOS, dime:
+   ( ) Quiero Mercado Pago   ( ) Stripe   ( ) PayPal
+   ...y cuando tengas la cuenta, me pasas la "llave" y lo prendo.
+
+Para WHATSAPP, dime cual prefieres:
+   ( ) Forma A: gratis, alguien pica enviar (ya casi esta).
+   ( ) Forma B: automatico con robot (tiene costo y tramite).
+
+Cuando me confirmes, yo te digo exactamente que botones
+apretar de tu lado y lo dejamos funcionando. 💕
+
+================================================================
+Hecho con carino para LoviBeauty.
+================================================================
