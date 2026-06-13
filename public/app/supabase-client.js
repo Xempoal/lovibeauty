@@ -238,5 +238,35 @@
       if (error) throw error;
       return data || [];
     },
+
+    // ─── Pagos con tarjeta (pasarela) ───
+    // Config pública: ¿está habilitado el cobro con tarjeta y con qué proveedor?
+    // Nunca lanza: si el endpoint no existe aún o falla, los pagos quedan
+    // deshabilitados y el sitio sigue ofreciendo solo transferencia.
+    async loadPaymentConfig() {
+      try {
+        const res = await fetch('/api/payments/config');
+        if (!res.ok) return { enabled: false };
+        return await res.json();
+      } catch (e) {
+        return { enabled: false };
+      }
+    },
+
+    // Crea un checkout para una reserva y devuelve { url } a la pasarela.
+    async createCardCheckout(bookingId) {
+      const res = await fetch('/api/payments/create-checkout', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ bookingId: bookingId }),
+      });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok) {
+        const e = new Error(data.error || ('checkout ' + res.status));
+        e.status = res.status;
+        throw e;
+      }
+      return data; // { url }
+    },
   };
 })();

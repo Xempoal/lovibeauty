@@ -27,6 +27,11 @@ function BookingV2(props) {
   var whatsNumber  = (cfg.whatsapp_number && cfg.whatsapp_number.replace(/\D/g, '')) || WHATS_NUM_V2;
   var holdMinutes  = parseInt(cfg.hold_minutes, 10) > 0 ? parseInt(cfg.hold_minutes, 10) : 20;
 
+  // Pasarela de pago (off por defecto hasta que el estudio configure llaves).
+  var payCfg = props.paymentConfig || { enabled: false };
+  var PROVIDER_LABEL_V = { stripe: 'Stripe', mercadopago: 'Mercado Pago', paypal: 'PayPal' };
+  var payProviderName = PROVIDER_LABEL_V[payCfg.provider] || 'tarjeta';
+
   var step      = _uS(0); // 0=date+slot, 1=chosen, 2=data, 3=payment
   var date      = _uS(null);
   var slot      = _uS(null); // { time }
@@ -125,6 +130,42 @@ function BookingV2(props) {
         submitError[1]('Algunos datos no son válidos. Revisa tu nombre y teléfono.');
       } else {
         submitError[1]('No pudimos completar la reserva. Intenta de nuevo.');
+      }
+    } finally {
+      submitting[1](false);
+    }
+  }
+
+  // Pago con tarjeta: aparta la cita (pending_payment) y redirige a la pasarela.
+  // El webhook confirma la cita cuando el proveedor avisa que el pago se acreditó.
+  async function submitCard() {
+    if (submitting[0]) return;
+    submitError[1](null);
+    submitting[1](true);
+    try {
+      var bookingId = await window.lbApi.createBooking({
+        serviceOptionId: serviceOption.id,
+        date:            date[0],
+        startTime:       slot[0].time,
+        fullName:        name[0].trim(),
+        email:           email[0].trim().toLowerCase() || null,
+        phone:           phone[0].trim(),
+        paymentMethod:   'card',
+      });
+      var out = await window.lbApi.createCardCheckout(bookingId);
+      if (out && out.url) { window.location.href = out.url; return; }
+      submitError[1]('No pudimos iniciar el pago. Intenta de nuevo.');
+    } catch (err) {
+      console.error('[booking] card checkout', err);
+      if (err.code === '23505') {
+        submitError[1]('Otra clienta acaba de tomar ese horario. Elige otro horario.');
+        toast && toast('Horario ya no disponible');
+      } else if (err.code === '22023') {
+        submitError[1]('Algunos datos no son válidos. Revisa tu nombre y teléfono.');
+      } else if (err.status === 503) {
+        submitError[1]('El pago con tarjeta no está disponible ahora. Usa transferencia.');
+      } else {
+        submitError[1]('No pudimos iniciar el pago. Intenta de nuevo.');
       }
     } finally {
       submitting[1](false);
@@ -296,7 +337,7 @@ function BookingV2(props) {
               <button className={'lv-paytab' + (payMethod[0] === 'card' ? ' sel' : '')} onClick={function() { payMethod[1]('card'); submitError[1](null); }}>
                 <span className="lv-paytab-icon">💳</span>
                 <strong>Tarjeta</strong>
-                <span>Próximamente</span>
+                <span>{payCfg.enabled ? 'Pago seguro' : 'Próximamente'}</span>
               </button>
             </div>
 
@@ -321,7 +362,27 @@ function BookingV2(props) {
               </div>
             )}
 
-            {payMethod[0] === 'card' && (
+            {payMethod[0] === 'card' && payCfg.enabled && (
+              <div className="lv-formcol lv-fadein">
+                <div className="lv-bankbox" style={{ textAlign: 'center', alignItems: 'center' }}>
+                  <p className="lv-paynote" style={{ margin: 0 }}>
+                    Pagas el anticipo de <strong>{fmtMoneyV(DEPOSIT_V2)}</strong> de forma segura con tarjeta.
+                  </p>
+                  <p className="lv-paynote small" style={{ margin: 0 }}>
+                    Te llevamos a {payProviderName} para completar el pago. Tu cita se confirma al instante.
+                  </p>
+                </div>
+                {submitError[0] && <p className="lv-err">{submitError[0]}</p>}
+                {submitError[0] && submitError[0].indexOf('horario') !== -1 && (
+                  <GlassBtn kind="glass" full onClick={pickAnotherSlot}>Elegir otro horario</GlassBtn>
+                )}
+                <GlassBtn full disabled={submitting[0]} onClick={submitCard}>
+                  {submitting[0] ? 'Conectando…' : 'Pagar con tarjeta'}
+                </GlassBtn>
+              </div>
+            )}
+
+            {payMethod[0] === 'card' && !payCfg.enabled && (
               <div className="lv-formcol lv-fadein">
                 <div className="lv-bankbox" style={{ textAlign: 'center', alignItems: 'center' }}>
                   <p className="lv-paynote" style={{ margin: 0 }}>

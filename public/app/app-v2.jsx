@@ -271,6 +271,7 @@ function AppV() {
   var businessHours = _uS(null);
   var businessConfig = _uS(null); // { bank_clabe, bank_name, ... } from Supabase
   var banners       = _uS([]);    // home carousel banners (admin-managed)
+  var paymentConfig = _uS({ enabled: false }); // pasarela de pago (off por defecto)
 
   // Booking flow state.
   var pendingServiceOption = _uS(null); // service_options row
@@ -290,12 +291,14 @@ function AppV() {
       window.lbApi.loadBusinessHours(),
       window.lbApi.loadBusinessConfig(),
       window.lbApi.loadBanners(),
+      window.lbApi.loadPaymentConfig(),
     ]).then(function(results) {
       if (cancelled) return;
       services[1](results[0]);
       businessHours[1](results[1]);
       businessConfig[1](results[2]);
       banners[1](results[3]);
+      paymentConfig[1](results[4] || { enabled: false });
       servicesLoading[1](false);
     }).catch(function(err) {
       if (cancelled) return;
@@ -304,6 +307,28 @@ function AppV() {
       toast('No pudimos cargar el catálogo. Recarga la página.');
     });
     return function() { cancelled = true; };
+  }, []);
+
+  // Retorno desde la pasarela de pago: la URL trae ?pago=ok|pendiente|cancelado.
+  // El webhook confirma la cita por su cuenta; aquí solo avisamos y limpiamos la
+  // URL para que no quede el parámetro al recargar.
+  _uE(function() {
+    var params;
+    try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+    var pago = params.get('pago');
+    if (!pago) return;
+    var MSG = {
+      ok:        '¡Pago recibido! Tu cita quedó confirmada 💖',
+      pendiente: 'Tu pago está en revisión. Te confirmamos en cuanto se acredite.',
+      cancelado: 'El pago no se completó. Puedes intentarlo de nuevo cuando quieras.',
+    };
+    toast(MSG[pago] || 'Gracias por tu pago.');
+    try {
+      params.delete('pago'); params.delete('cita');
+      var qs = params.toString();
+      window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+    } catch (e) { /* noop */ }
+    if (pago === 'ok' && user) view[1]('cuenta');
   }, []);
 
   _uE(function() {
@@ -460,6 +485,7 @@ function AppV() {
                 serviceName={pendingServiceName[0]}
                 businessHours={businessHours[0]}
                 businessConfig={businessConfig[0]}
+                paymentConfig={paymentConfig[0]}
                 toast={toast}
                 onClose={closeBooking}
                 onGoLogin={function() { authMode[1]('login'); }}
